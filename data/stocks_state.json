@@ -1,10 +1,18 @@
 {
   "_metadata": {
-    "last_updated": "2026-11-14T23:55:00.344102",
-    "last_telegram_offset": 357813241
+    "last_updated": "2026-11-14T18:44:02.580810",
+    "last_telegram_offset": 357813248
   },
   "stocks": {
     "TRENT": {
+      "status": "WATCHLIST",
+      "updated_at": "2026-11-14"
+    },
+    "GOLDIETF": {
+      "status": "PERMABAN",
+      "updated_at": "2026-11-14"
+    },
+    "LIQUIDBEES": {
       "status": "WATCHLIST",
       "updated_at": "2026-11-14"
     }

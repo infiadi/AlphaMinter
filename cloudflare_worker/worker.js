@@ -91,20 +91,39 @@ export default {
           return new Response("OK");
         }
 
-        // Handle Interactive Text Commands (/watchlist, /banned, /unban <SYMBOL>)
+        // Handle Interactive Text Commands (/watchlist, /banned, /unban <SYMBOL>, /help)
         if (update.message && update.message.text) {
           const text = update.message.text.trim();
+          const lowerText = text.toLowerCase();
           const chatId = update.message.chat.id;
 
-          if (text === "/watchlist") {
+          const helpMessage = `<b>🤖 AlphaMinter Bot Commands & Guide</b>\n\n` +
+            `<b>📋 Available Commands:</b>\n` +
+            `• <code>/watchlist</code> — View stocks saved to your active watchlist\n` +
+            `• <code>/banned</code> — View stocks currently permabanned from alerts\n` +
+            `• <code>/unban SYMBOL</code> — Restore a stock (e.g. <code>/unban GOLDIETF</code>)\n` +
+            `• <code>/help</code> — Show this help guide\n\n` +
+            `<b>⚡ 1-Tap Alert Buttons:</b>\n` +
+            `When an alert arrives on your phone, use the inline buttons:\n` +
+            `• <b>⭐ Watchlist:</b> Add stock to your active watchlist\n` +
+            `• <b>❌ Drop 30D:</b> Silence alerts for 30 days (cooldown)\n` +
+            `• <b>🚫 Permaban:</b> Permanently exclude stock from all future scans\n\n` +
+            `<b>🕒 Autonomous Scan Schedule (IST):</b>\n` +
+            `• <b>18:45</b> — Delivery Accumulation (Bhavcopy)\n` +
+            `• <b>19:00</b> — PEAD Earnings Drift\n` +
+            `• <b>19:15</b> — Buyback Arbitrage Monitor\n` +
+            `• <b>19:30</b> — 20%+ Forward Guidance (Gemini AI)\n\n` +
+            `<i>Tip: Tap or copy any command above to run it instantly.</i>`;
+
+          if (lowerText === "/watchlist" || lowerText === "watchlist") {
             const { results } = await env.DB.prepare("SELECT symbol FROM stocks_state WHERE status = 'WATCHLIST' ORDER BY updated_at DESC").all();
             const list = (results || []).map(r => `• <code>${r.symbol}</code>`).join("\n") || "<i>Watchlist is empty.</i>";
             await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `<b>⭐ Active Watchlist:</b>\n\n${list}`);
-          } else if (text === "/banned") {
+          } else if (lowerText === "/banned" || lowerText === "banned") {
             const { results } = await env.DB.prepare("SELECT symbol FROM stocks_state WHERE status = 'PERMABAN' ORDER BY updated_at DESC").all();
             const list = (results || []).map(r => `• <code>${r.symbol}</code>`).join("\n") || "<i>No permabanned stocks.</i>";
             await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `<b>🚫 Permabanned Stocks:</b>\n\n${list}\n\n<i>To unban a stock, send:</i>\n<code>/unban SYMBOL</code>`);
-          } else if (text.startsWith("/unban")) {
+          } else if (lowerText.startsWith("/unban") || lowerText.startsWith("unban")) {
             const parts = text.split(/\s+/);
             if (parts.length < 2) {
               await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "⚠️ <b>Usage:</b> <code>/unban SYMBOL</code>\n<i>Example: /unban GOLDIETF</i>");
@@ -113,6 +132,9 @@ export default {
               await env.DB.prepare("DELETE FROM stocks_state WHERE symbol = ?").bind(targetSymbol).run();
               await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `✅ <b>Unbanned <code>${targetSymbol}</code></b>.\nIt is now active for future scans.`);
             }
+          } else {
+            // Default fallback for /help, /start, help, or ANY unrecognized text
+            await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, helpMessage);
           }
         }
       } catch (err) {

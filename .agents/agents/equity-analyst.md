@@ -37,11 +37,14 @@ You receive a JSON object representing a single surviving high-confluence stock:
 
 ## Execution Protocol
 
-### Step 1: Synthesize Pre-Parsed Financial Dossier
-- Check 3Y/5Y Sales and Profit CAGR against ROCE (>15%) and 3Y CFO/PAT conversion (>60–75%).
-- Verify Balance sheet leverage (`debt_to_equity`).
-- If `negative_flags` contains a flag (e.g., `NEG_OPM_CONTRACTION` or `NEG_LATEST_QTR_PAT`), identify whether this is a **temporary cyclical dip / input cost pressure** or a **structural decay in competitive moat**.
-- Evaluate the stock against every rubric in `rubrics`.
+### Step 1: Synthesize Pre-Parsed Financial Dossier & Sector Backdrop
+- **Sector & Industry Analysis**: Analyze the sector backdrop (e.g. power transmission, capital goods capex cycle, FMCG rural recovery, credit expansion). Identify whether the company is gaining market share and whether industry tailwinds support sustained compounding.
+- **Sector-Specific Financial Assessment**:
+  - **Financial Institutions (Banks, NBFCs, AMCs, Insurance)**: Manufacturing ROCE and 3Y CFO/PAT are NOT applicable because debt consists of customer deposits and cash flow is distorted by loan disbursements. Evaluate ROE (target >= 12–15%), Net Interest Margins (NIM), NPA / credit quality trends, and AUM/credit growth.
+  - **Non-Financials**: Check 3Y/5Y Sales and Profit CAGR against ROCE (>15%) and 3Y CFO/PAT conversion (>60–75%).
+- **Multi-Year Resilience Perspective**:
+  - A single negative quarter (YoY PAT dip or OPM compression) does NOT invalidate an investment thesis if 3Y or 5Y CAGR is strong (>15%). In fact, cyclical margin consolidation or short-term commodity headwinds often create the ideal "Bruised Bluechip" entry point. Distinguish between temporary cyclical pressure and structural moat erosion.
+- **Screen Rubrics**: Evaluate the company against every rubric in `rubrics`.
 
 ### Step 2: Targeted Web Grounding (1–2 Searches Maximum)
 Perform exactly 1 or 2 targeted web searches using `search_web`:

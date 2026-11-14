@@ -41,34 +41,21 @@ Inspect `candidates`:
 
 ---
 
-## Step 3: Sequential 1-Stock-at-a-Time Subagent Loop
-For each candidate stock in `candidates` (strictly **one at a time**, sequentially, never in parallel):
+## Step 3: Parallel Subagent Batches (3 to 5 at a time)
+Process surviving candidate stocks in parallel batches of **3 to 5 concurrent subagents**:
 
-1. Call `invoke_subagent` with:
+1. Divide `candidates` into slices of 3 to 5 stocks (e.g. `batch = candidates[i:i+4]`).
+2. For each stock in the current batch, call `invoke_subagent` concurrently:
    - `TypeName`: `"equity-analyst"`
    - `Role`: `"Equity Analyst - <SYMBOL>"`
-   - `Prompt`: Provide ONLY that single stock's JSON object:
-     ```json
-     {
-       "symbol": candidate["symbol"],
-       "name": candidate["name"],
-       "screen_count": candidate["screen_count"],
-       "matched_screens": candidate["matched_screens"],
-       "rubrics": candidate["rubrics"],
-       "negative_flags": candidate["negative_flags"],
-       "negative_flag_reasons": candidate.get("negative_flag_reasons", {}),
-       "screen_metrics": candidate.get("screen_metrics", {}),
-       "dossier": candidate["dossier"]
-     }
-     ```
-2. The `@equity-analyst` subagent will:
-   - Evaluate the pre-parsed financials against matched screen rubrics.
-   - Perform 1–2 targeted web searches for FY27/FY28 concall guidance and red flags.
-   - Assign a standardized verdict (`STRONG_BUY_WATCH`, `ACCUMULATE_ON_DIP`, `HOLD_WATCH`, `REJECT`).
-   - Return structured findings.
-3. Wait for the subagent to report back.
-4. Record its verdict into `logs/screener_audit_YYYY-MM-DD.md`, `logs/screener_audit_YYYY-MM-DD.jsonl`, and checkpoint `data/reviewed_history.json`.
-5. Repeat for the next candidate.
+   - `Prompt`: Provide that stock's complete JSON dossier and specific due diligence directives:
+     - **Sector & Industry Analysis**: Analyze sectoral tailwinds/headwinds, competitive intensity, capex cycles, and structural drivers.
+     - **Sector-Specific Metrics**: For Financials (Banks/NBFCs/AMCs), evaluate ROE, NIM, asset quality (GNPA/NNPA), and credit growth rather than manufacturing ROCE or CFO/PAT.
+     - **Multi-Year Perspective**: Recognize that a single transient or cyclical negative quarter does not break a multi-year compounder (check 3Y/5Y Sales and Profit CAGR).
+     - **Targeted Web Searches**: Perform 1–2 web searches on recent concall FY27/FY28 management guidance, expansion plans, and any forensic red flags / SEBI / tax scrutiny.
+3. Wait for all subagents in the batch to report back.
+4. Record their verdicts into `logs/screener_audit_YYYY-MM-DD.md`, `logs/screener_audit_YYYY-MM-DD.jsonl`, and checkpoint `data/reviewed_history.json`.
+5. Proceed to the next batch until all candidates are processed.
 
 ---
 

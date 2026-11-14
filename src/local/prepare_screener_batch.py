@@ -101,8 +101,12 @@ def evaluate_screen_level_flags(
     screen_overrides_list: List[Dict[str, Any]]
 ) -> Tuple[List[str], Dict[str, str]]:
     """
-    Evaluates visible screen columns (Market Cap, ROCE, Qtr Profit Var, Sales Growth)
+    Evaluates visible screen columns (Market Cap, ROCE/ROE, Qtr Profit Var, Sales Growth, 3Y/5Y Trends)
     directly at the screen level with ZERO extra network requests.
+    Supports:
+    - Financial stock dynamics (evaluates ROE instead of ROCE)
+    - Multi-year CAGR buffer: 1 weak quarter does not drop a strong multi-year compounder
+    - Market cap floor (₹5,000 Cr default)
     """
     flags: List[str] = []
     reasons: Dict[str, str] = {}
@@ -115,40 +119,73 @@ def evaluate_screen_level_flags(
         for ex in ov.get("exempt_flags", []):
             exempt_flags.add(ex)
 
-    # 1. Market Cap
-    global_min_mcap = float(global_filters.get("min_market_cap_cr", 1000))
+    # 1. Market Cap (>= ₹5,000 Cr default)
+    global_min_mcap = float(global_filters.get("min_market_cap_cr", 5000))
     screen_mcaps = [ov.get("min_market_cap_cr") for ov in screen_overrides_list if ov.get("min_market_cap_cr") is not None]
     effective_min_mcap = max(screen_mcaps) if screen_mcaps else global_min_mcap
     mcap = extract_screen_metric(m, ["mar cap", "market cap"])
     if mcap is not None and mcap < effective_min_mcap:
         flags.append("NEG_LOW_MCAP")
-        reasons["NEG_LOW_MCAP"] = f"Screen M.Cap ₹{mcap:.0f} Cr < ₹{effective_min_mcap:.0f} Cr"
+        reasons["NEG_LOW_MCAP"] = f"Screen M.Cap ₹{mcap:.0f} Cr < minimum required ₹{effective_min_mcap:.0f} Cr"
 
-    # 2. ROCE
+    # Identify if Financial Institution (Bank, NBFC, Housing, AMC, Insurance)
+    cand_name = cand.get("name", "")
+    cand_sym = cand.get("symbol", "")
+    is_fin_screen = any(kw in f"{cand_name} {cand_sym}".lower() for kw in [
+        "bank", "finance", "nbfc", "housing", "fin", "capital", "insurance", "amc", "asset management", "securities", "invest", "holding"
+    ])
+
+    # 2. Capital Efficiency (ROCE for non-financials, ROE for financials)
     if "NEG_ROCE" not in exempt_flags:
-        global_min_roce = float(global_filters.get("min_roce_pct", 10.0))
-        screen_roces = [ov.get("min_roce_pct") for ov in screen_overrides_list if ov.get("min_roce_pct") is not None]
-        effective_min_roce = max(screen_roces) if screen_roces else global_min_roce
-        roce = extract_screen_metric(m, ["roce"])
-        if roce is not None and roce < effective_min_roce:
-            flags.append("NEG_ROCE")
-            reasons["NEG_ROCE"] = f"Screen ROCE {roce}% < {effective_min_roce}%"
+        if is_fin_screen:
+            min_roe = float(global_filters.get("min_roe_financials_pct", 10.0))
+            roe = extract_screen_metric(m, ["roe"])
+            if roe is not None and roe < min_roe:
+                flags.append("NEG_ROCE")
+                reasons["NEG_ROCE"] = f"Financial stock ROE {roe}% < {min_roe}% threshold"
+        else:
+            global_min_roce = float(global_filters.get("min_roce_pct", 10.0))
+            screen_roces = [ov.get("min_roce_pct") for ov in screen_overrides_list if ov.get("min_roce_pct") is not None]
+            effective_min_roce = max(screen_roces) if screen_roces else global_min_roce
+            roce = extract_screen_metric(m, ["roce"])
+            if roce is not None and roce < effective_min_roce:
+                flags.append("NEG_ROCE")
+                reasons["NEG_ROCE"] = f"Screen ROCE {roce}% < {effective_min_roce}%"
+
+    # Multi-year growth resilience check:
+    # 1 YoY/QoQ negative quarter does not make a stock bad if 3Y or 5Y CAGR is strong!
+    profit_3y = extract_screen_metric(m, ["profit var 3yrs", "profit var 3"])
+    sales_3y = extract_screen_metric(m, ["sales var 3yrs", "sales var 3"])
+    profit_5y = extract_screen_metric(m, ["profit var 5yrs", "profit var 5"])
+    sales_5y = extract_screen_metric(m, ["sales var 5yrs", "sales var 5"])
+
+    has_multi_year_cushion = (
+        (profit_3y is not None and profit_3y >= 15.0) or
+        (profit_5y is not None and profit_5y >= 15.0) or
+        (sales_3y is not None and sales_3y >= 12.0)
+    )
 
     # 3. Latest Qtr YoY PAT Growth
     if "NEG_LATEST_QTR_PAT" not in exempt_flags:
-        global_min_pat = float(global_filters.get("min_latest_qtr_yoy_pat_pct", -15.0))
+        global_min_pat = float(global_filters.get("min_latest_qtr_yoy_pat_pct", -20.0))
         pat_growth = extract_screen_metric(m, ["qtr profit var", "profit var%"])
         if pat_growth is not None and pat_growth < global_min_pat:
-            flags.append("NEG_LATEST_QTR_PAT")
-            reasons["NEG_LATEST_QTR_PAT"] = f"Screen Qtr PAT growth {pat_growth}% < {global_min_pat}%"
+            if has_multi_year_cushion:
+                logger.info(f"Screen {cand_sym}: Transient Qtr PAT dip ({pat_growth}%) cushioned by multi-year CAGR (3Y Profit: {profit_3y}%). Not penalized.")
+            else:
+                flags.append("NEG_LATEST_QTR_PAT")
+                reasons["NEG_LATEST_QTR_PAT"] = f"Screen Qtr PAT growth {pat_growth}% < {global_min_pat}% (no multi-year cushion)"
 
     # 4. Latest Qtr YoY Sales Growth
     if "NEG_LATEST_QTR_SALES" not in exempt_flags:
-        global_min_sales = float(global_filters.get("min_latest_qtr_yoy_sales_pct", -5.0))
+        global_min_sales = float(global_filters.get("min_latest_qtr_yoy_sales_pct", -10.0))
         sales_growth = extract_screen_metric(m, ["sales growth"])
         if sales_growth is not None and sales_growth < global_min_sales:
-            flags.append("NEG_LATEST_QTR_SALES")
-            reasons["NEG_LATEST_QTR_SALES"] = f"Screen Sales growth {sales_growth}% < {global_min_sales}%"
+            if has_multi_year_cushion:
+                logger.info(f"Screen {cand_sym}: Transient Qtr Sales dip ({sales_growth}%) cushioned by multi-year CAGR (3Y Sales: {sales_3y}%). Not penalized.")
+            else:
+                flags.append("NEG_LATEST_QTR_SALES")
+                reasons["NEG_LATEST_QTR_SALES"] = f"Screen Sales growth {sales_growth}% < {global_min_sales}% (no multi-year cushion)"
 
     return flags, reasons
 
@@ -237,31 +274,62 @@ def evaluate_negative_flags(
             flags.append("NEG_PROMOTER_PLEDGE")
             reasons["NEG_PROMOTER_PLEDGE"] = f"Promoter holding declined by {abs(promoter_qoq)}% QoQ (>-2.0% threshold)"
 
+    # Multi-year growth resilience check:
+    # 1 YoY/QoQ negative quarter does not make a stock bad if 3Y or 5Y CAGR is strong!
+    growth = dossier.get("compounded_growth", {})
+    def parse_growth(section: str, period: str) -> Optional[float]:
+        val = growth.get(section, {}).get(period, "")
+        if isinstance(val, str) and "%" in val:
+            try:
+                return float(val.replace("%", "").strip())
+            except ValueError:
+                pass
+        return None
+
+    profit_3y_cagr = parse_growth("Compounded Profit Growth", "3 Years")
+    profit_5y_cagr = parse_growth("Compounded Profit Growth", "5 Years")
+    sales_3y_cagr = parse_growth("Compounded Sales Growth", "3 Years")
+
+    has_multi_year_cushion = (
+        (profit_3y_cagr is not None and profit_3y_cagr >= 15.0) or
+        (profit_5y_cagr is not None and profit_5y_cagr >= 15.0) or
+        (sales_3y_cagr is not None and sales_3y_cagr >= 12.0)
+    )
+
     # 5. NEG_LATEST_QTR_PAT
     if "NEG_LATEST_QTR_PAT" not in exempt_flags:
-        global_min_pat = float(global_filters.get("min_latest_qtr_yoy_pat_pct", -15.0))
+        global_min_pat = float(global_filters.get("min_latest_qtr_yoy_pat_pct", -20.0))
         pat_growth = metrics.get("latest_qtr_yoy_pat_pct")
         if pat_growth is not None and pat_growth < global_min_pat:
-            flags.append("NEG_LATEST_QTR_PAT")
-            reasons["NEG_LATEST_QTR_PAT"] = f"Latest Qtr YoY PAT growth {pat_growth}% < min allowed {global_min_pat}%"
+            if has_multi_year_cushion:
+                logger.info(f"{stock_candidate.get('symbol')}: Qtr PAT dip ({pat_growth}%) cushioned by multi-year CAGR (3Y Profit: {profit_3y_cagr}%). Not penalized.")
+            else:
+                flags.append("NEG_LATEST_QTR_PAT")
+                reasons["NEG_LATEST_QTR_PAT"] = f"Latest Qtr YoY PAT growth {pat_growth}% < min allowed {global_min_pat}%"
 
     # 6. NEG_LATEST_QTR_SALES
     if "NEG_LATEST_QTR_SALES" not in exempt_flags:
-        global_min_sales = float(global_filters.get("min_latest_qtr_yoy_sales_pct", -5.0))
+        global_min_sales = float(global_filters.get("min_latest_qtr_yoy_sales_pct", -10.0))
         sales_growth = metrics.get("latest_qtr_yoy_sales_pct")
         if sales_growth is not None and sales_growth < global_min_sales:
-            flags.append("NEG_LATEST_QTR_SALES")
-            reasons["NEG_LATEST_QTR_SALES"] = f"Latest Qtr YoY Sales growth {sales_growth}% < min allowed {global_min_sales}%"
+            if has_multi_year_cushion:
+                logger.info(f"{stock_candidate.get('symbol')}: Qtr Sales dip ({sales_growth}%) cushioned by multi-year CAGR. Not penalized.")
+            else:
+                flags.append("NEG_LATEST_QTR_SALES")
+                reasons["NEG_LATEST_QTR_SALES"] = f"Latest Qtr YoY Sales growth {sales_growth}% < min allowed {global_min_sales}%"
 
     # 7. NEG_OPM_CONTRACTION
     if "NEG_OPM_CONTRACTION" not in exempt_flags:
         yoy_opm_bps = metrics.get("latest_qtr_yoy_opm_bps")
         if yoy_opm_bps is not None and yoy_opm_bps < -300:
-            flags.append("NEG_OPM_CONTRACTION")
-            reasons["NEG_OPM_CONTRACTION"] = f"Operating Margin contracted by {abs(yoy_opm_bps):.0f} bps YoY (>300 bps contraction)"
+            if has_multi_year_cushion:
+                logger.info(f"{stock_candidate.get('symbol')}: OPM contraction ({yoy_opm_bps:.0f} bps) buffered by strong 3Y/5Y growth. Not penalized.")
+            else:
+                flags.append("NEG_OPM_CONTRACTION")
+                reasons["NEG_OPM_CONTRACTION"] = f"Operating Margin contracted by {abs(yoy_opm_bps):.0f} bps YoY (>300 bps contraction)"
 
-    # Also check Market Cap floor if configured
-    global_min_mcap = float(global_filters.get("min_market_cap_cr", 1000))
+    # Also check Market Cap floor (>= ₹5,000 Cr default)
+    global_min_mcap = float(global_filters.get("min_market_cap_cr", 5000))
     screen_mcaps = [ov.get("min_market_cap_cr") for ov in screen_overrides_list if ov.get("min_market_cap_cr") is not None]
     effective_min_mcap = max(screen_mcaps) if screen_mcaps else global_min_mcap
 
@@ -516,6 +584,26 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         }, f, indent=2, ensure_ascii=False)
 
     duration = (datetime.now() - start_time).total_seconds()
+    
+    # Human-readable Attrition Funnel Report
+    print("\n" + "=" * 70)
+    print("🎯 ALPHAMINTER SCREENER ATTRITION FUNNEL SUMMARY")
+    print("=" * 70)
+    print(f"1. Total Unique Tickers Discovered Across Screens: {total_unique_screen_hits}")
+    print(f"2. Excluded by Baseline Gate: {excluded_stats['non_equity'] + excluded_stats['d1_silenced'] + excluded_stats['cooldown']}")
+    print(f"   - Non-Operating Equities: {excluded_stats['non_equity']}")
+    print(f"   - Silenced (Cloudflare D1 Permaban/Drop): {excluded_stats['d1_silenced']}")
+    print(f"   - 45-Day Review Cooldown: {excluded_stats['cooldown']}")
+    print(f"3. Surviving Initial Gate: {len(surviving_initial_gate)}")
+    print(f"4. Screen-Level Table Rejections (0 Net Calls): {len(rejected_candidates) - (len(candidates_to_fetch) - len(qualified_candidates))}")
+    print(f"5. Candidates Audited via Deep Dossier: {len(candidates_to_fetch)}")
+    print(f"6. Disqualified by Forensic Ratios: {len(rejected_candidates) - (len(rejected_candidates) - (len(candidates_to_fetch) - len(qualified_candidates)))}")
+    print(f"7. FINAL QUALIFIED QUEUE FOR AI SUBAGENTS: {len(qualified_candidates)}")
+    for q_idx, q in enumerate(qualified_candidates, 1):
+        m = q.get('dossier', {}).get('derived_metrics', {})
+        print(f"   [{q_idx:02d}] {q['symbol']:<12} | Hits: {q['screen_count']} | ROCE: {m.get('roce_pct', 'N/A')}% | CFO/PAT: {m.get('cfo_to_pat_3y', 'N/A')}x | P/E: {m.get('pe', 'N/A')}x | Flags: {q.get('negative_flags') or 'Clean'}")
+    print("=" * 70 + "\n")
+
     logger.info("=" * 60)
     logger.info(f"STAGE 1 COMPLETE in {duration:.1f}s")
     logger.info(f"Qualified Candidates Queue: {queue_file} ({len(qualified_candidates)} stocks)")

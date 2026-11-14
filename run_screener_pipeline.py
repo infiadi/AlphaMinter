@@ -112,27 +112,35 @@ def evaluate_candidate_heuristic(candidate: Dict[str, Any]) -> Dict[str, Any]:
     neg_flags = candidate.get("negative_flags", [])
 
     roce = metrics.get("roce_pct") or 0.0
+    roe = metrics.get("roe_pct") or 0.0
     cfo_pat = metrics.get("cfo_to_pat_3y") or 0.0
     debt_eq = metrics.get("debt_to_equity") or 0.0
     sales_cagr_3y = growth.get("Compounded Sales Growth", {}).get("3 Years")
     profit_cagr_3y = growth.get("Compounded Profit Growth", {}).get("3 Years")
     pe = metrics.get("pe") or 0.0
+    is_fin = metrics.get("is_financial_sector", False)
+    sector = dossier.get("sector") or "Diversified"
+    industry = dossier.get("industry") or "Equities"
 
-    # Decision Logic
+    # Decision Logic (Sector Aware)
     score = 7
     if screen_count >= 2:
         score += 1
-    if roce >= 20.0:
-        score += 1
-    if cfo_pat >= 0.85:
-        score += 1
-    if debt_eq < 0.5:
-        score += 1
+    if is_fin:
+        if roe >= 15.0:
+            score += 1
+    else:
+        if roce >= 20.0:
+            score += 1
+        if cfo_pat >= 0.85:
+            score += 1
+        if debt_eq < 0.5:
+            score += 1
     if len(neg_flags) > 0:
         score -= 2
 
     # Verdict assignment
-    if score >= 9 and len(neg_flags) == 0 and cfo_pat >= 0.75:
+    if score >= 9 and len(neg_flags) == 0:
         verdict = "STRONG_BUY_WATCH"
     elif score >= 7:
         verdict = "ACCUMULATE_ON_DIP"
@@ -141,10 +149,16 @@ def evaluate_candidate_heuristic(candidate: Dict[str, Any]) -> Dict[str, Any]:
     else:
         verdict = "REJECT"
 
-    thesis = (
-        f"Multi-screen compounder ({', '.join(matched_screens)}) delivering "
-        f"{roce}% ROCE and {cfo_pat:.2f}x 3Y CFO/PAT cash conversion with robust market positioning."
-    )
+    if is_fin:
+        thesis = (
+            f"Sector: {sector} ({industry}). Multi-screen financial compounder ({', '.join(matched_screens)}) "
+            f"delivering {roe}% ROE with resilient underwriting quality and credit compounding."
+        )
+    else:
+        thesis = (
+            f"Sector: {sector} ({industry}). Multi-screen compounder ({', '.join(matched_screens)}) delivering "
+            f"{roce}% ROCE and {cfo_pat:.2f}x 3Y CFO/PAT cash conversion with robust market positioning."
+        )
     guidance = (
         f"Management commentary indicates ongoing expansion with 3Y Sales CAGR at {sales_cagr_3y or '15%+'} "
         f"and Profit CAGR at {profit_cagr_3y or '20%+'}."

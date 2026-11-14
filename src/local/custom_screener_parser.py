@@ -588,5 +588,8 @@ class CustomScreenerParser:
             "latest_qtr_yoy_pat_pct": latest_qtr_yoy_pat_pct,
             "promoter_pledge_pct": promoter_pledge_pct,
             "promoter_qoq_change_pct": promoter_qoq_change_pct,
-            "is_financial_sector": any(k in f"{sector} {industry}".lower() for k in ["bank", "finance", "nbfc", "housing finance"])
+            "is_financial_sector": any(k in f"{sector} {industry} {company_name}".lower() for k in [
+                "bank", "finance", "nbfc", "housing finance", "insurance", "asset management", 
+                "financial services", "financial", "securities", "broking", "holding company"
+            ])
         }

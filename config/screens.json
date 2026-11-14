@@ -4,16 +4,19 @@
     "review_cooldown_days": 45,
     "max_pages_per_screen": 10,
     "max_negative_flags_allowed": 1,
-    "max_dossiers_to_fetch": 25
+    "max_dossiers_to_fetch": 30,
+    "parallel_subagents_batch_size": 4
   },
   "global_filters": {
-    "min_market_cap_cr": 1000,
+    "min_market_cap_cr": 5000,
     "min_roce_pct": 10.0,
+    "min_roe_financials_pct": 10.0,
     "max_debt_to_equity": 1.5,
     "min_cfo_to_pat_3y": 0.60,
     "max_promoter_pledge_pct": 10.0,
-    "min_latest_qtr_yoy_pat_pct": -15.0,
-    "min_latest_qtr_yoy_sales_pct": -5.0
+    "min_latest_qtr_yoy_pat_pct": -20.0,
+    "min_latest_qtr_yoy_sales_pct": -10.0,
+    "multi_year_cagr_cushion_pct": 12.0
   },
   "screens": [
     {
@@ -22,7 +25,7 @@
       "url": "https://www.screener.in/screens/3902841/midcap-opportunity/",
       "rubric": "Identify midcap compounders with resilient revenue growth, healthy cash conversion, and reasonable valuations.",
       "conditional_overrides": {
-        "min_market_cap_cr": 2000,
+        "min_market_cap_cr": 5000,
         "min_roce_pct": 12.0
       }
     },
@@ -32,7 +35,8 @@
       "url": "https://www.screener.in/screens/1735153/super-high-growth-companies-in-long-term/",
       "rubric": "Verify sustained high growth (>20% 3Y/5Y CAGR) with strong balance sheet, cash conversion (>70%), and reinvestment moat.",
       "conditional_overrides": {
-        "min_roce_pct": 18.0,
+        "min_market_cap_cr": 5000,
+        "min_roce_pct": 15.0,
         "min_cfo_to_pat_3y": 0.70
       }
     },
@@ -42,8 +46,9 @@
       "url": "https://www.screener.in/screens/2306282/bruised-blue-chips/",
       "rubric": "Verify whether the PE discount vs 5Y median is temporary cyclical/sentiment pressure rather than structural moat decay.",
       "conditional_overrides": {
-        "min_roce_pct": 15.0,
-        "exempt_flags": ["NEG_LATEST_QTR_PAT"]
+        "min_market_cap_cr": 5000,
+        "min_roce_pct": 12.0,
+        "exempt_flags": ["NEG_LATEST_QTR_PAT", "NEG_OPM_CONTRACTION"]
       }
     }
   ]

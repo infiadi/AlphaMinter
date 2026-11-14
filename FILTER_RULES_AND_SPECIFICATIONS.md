@@ -109,17 +109,32 @@ $$\text{Allowed Drop Cushion \%} = \frac{\text{CMP} - P_{\text{breakeven}}}{\tex
 
 ---
 
-## 4. Scanner 4: 20%+ Forward Management Guidance Scanner
+## 4. Scanner 4: 20%+ Forward Management Guidance & Forensic Governance Engine
 * **Execution Cadence:** Every Monday through Friday at **19:30 IST**.
 * **Underlying Edge:** Forward guidance revisions drive institutional earnings upgrades. When an executive team explicitly guides for $\ge 20\%$ profit or revenue growth, consensus earnings estimates increase, forcing institutional sell-side analysts to re-rate the stock's valuation multiple.
 
-### Operational Specification
+### Operational Specification & Sanity Guardrails
 
-#### 1. Scope & Universe:
-* Operating equities only ($\text{Market Cap} \ge ₹5,000\text{ Crore}$).
-* Whitelisted Disclosures: Scans BSE corporate announcements filtering by subject tags: `Investor Presentation`, `Concall Transcript`, `Earnings Conference Call`, `Guidance`, `Outlook`, `Press Release`.
+#### 1. Dual-Stream Architecture:
+* **Stream 1 (Primary):** Official BSE Corporate LODR Disclosures (Investor Presentations, Concall Transcripts, Earnings Calls, Press Releases).
+* **Stream 2 (Secondary):** Google News RSS feeds indexing top financial publications (Moneycontrol, Economic Times, Livemint, CNBC-TV18). Cloud-safe XML, zero Cloudflare bot blocks.
 
-#### 2. Dynamic Calendar Logic (Zero Hardcoded FY Strings):
+#### 2. Strict Sanity & Forensic Governance Verification (`GovernanceFilter`):
+Before any stock alert can be dispatched to your phone, it must pass a 3-tier forensic audit:
+1. **Market Cap Floor ($\ge ₹5,000\text{ Crore}$):**
+   * Primary: Verification against NSE's official **Nifty 500 index master** (constituents guaranteed $\ge ₹5,000$ Cr institutional scale).
+   * Secondary: Live BSE quote Market Cap verification. Micro-caps and operator pump stocks are strictly disqualified.
+2. **Surveillance Disqualification:** Rejects any stock under SEBI's **ASM** (Additional Surveillance Measure) or **GSM** (Graded Surveillance Measure), or non-EQ series (`BE`, `BZ`).
+3. **Forensic & Promoter Red Flag Screening:**
+   * Scans BSE corporate announcements for the stock over the past 180 days for critical governance warnings:
+     `forensic audit`, `auditor resignation`, `qualified opinion`, `adverse opinion`, `sebi order`, `show cause notice`, `fraud`, `default in payment`, `nclt`, `insolvency`, `pledge invocation`.
+   * Any active red flag **immediately rejects** the alert.
+
+#### 3. Multi-Day Deduplication & Cooldown Architecture:
+* **Item-Level Cache (14-Day Expiry):** Every processed filing ID (`ATTACHMENTNAME`) or news article MD5 hash is saved in `data/guidance_history.json`. If an identical filing or article appears again in subsequent runs, it is **skipped instantly** with 0 API cost.
+* **Stock-Level Cooldown (45-Day / Quarterly Expiry):** Once an alert fires for a company (e.g. `TRENT` for `Q3FY27`), the stock is placed on an automatic **45-day guidance cooldown**. Even if the company files an investor presentation on Tuesday and a concall transcript on Thursday, you receive only **one** high-conviction alert.
+
+#### 4. Dynamic Calendar Logic (Zero Hardcoded FY Strings):
 * Indian Fiscal Years run from April 1 to March 31.
 * The system computes:
   * Current Fiscal Year: $\text{FY} = \text{today.year} + 1$ (if month $\ge 4$) else $\text{today.year}$.
@@ -127,17 +142,15 @@ $$\text{Allowed Drop Cushion \%} = \frac{\text{CMP} - P_{\text{breakeven}}}{\tex
   * Current Quarter: Month 4–6 = `Q1`, 7–9 = `Q2`, 10–12 = `Q3`, 1–3 = `Q4`.
   * Quarter Tag: e.g. `Q3FY27`.
 
-#### 3. Quarter-Level Deduplication:
-* During earnings season, a company may release an Earnings Press Release on Tuesday, an Investor Presentation on Wednesday, and a Concall Transcript on Thursday.
-* The system generates a persistent deduplication key:
-  $$\text{Key} = \text{SYMBOL} : \text{QuarterTag} \quad (\text{e.g., } \texttt{TRENT:Q3FY27})$$
-* Once an alert fires for that symbol in that quarter, subsequent duplicate disclosures for the same quarter are suppressed.
-
-#### 4. Strict LLM Prompt Guardrails (Gemini 3.5 Flash Lite):
+#### 5. Strict LLM Prompt Guardrails (Gemini 3.5 Flash Lite):
 * **Model ID:** `gemini-3.5-flash-lite` (Free-tier, 500 requests/day, sub-second latency, zero billing account requirement).
 * **Token Slicing:** Extracts paragraphs containing guidance keywords (`guidance`, `outlook`, `target`, `PAT`, `EBITDA`, `capex`, `CAGR`) capped at 8,000 characters to keep TPM usage $<5\%$.
 * **Rate-Limit Pacing:** 3.0-second delay between calls + exponential backoff on HTTP 429.
 * **Strict Response Format:** `responseMimeType: "application/json"`.
+* **The Vision vs. Guidance Negation Rule:**
+  * **REJECT:** Past-tense claims (*"We grew revenue by 30% in the previous quarter"*).
+  * **REJECT:** Unanchored long-term visions (*"Our vision is to become a ₹20,000 Cr company by 2035"*).
+  * **ACCEPT ONLY:** Definite near-term forward guidance (*"Management expects FY27 revenue to grow between 22%–25% with 200 bps EBITDA margin improvement"*).
 * **The Vision vs. Guidance Negation Rule:**
   * **REJECT:** Past-tense claims (*"We grew revenue by 30% in the previous quarter"*).
   * **REJECT:** Unanchored long-term visions (*"Our vision is to become a ₹20,000 Cr company by 2035"*).

@@ -3,33 +3,39 @@ import logging
 import os
 import re
 import time
+import hashlib
 from typing import List, Dict, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import requests
-from config.settings import BSE_HEADERS, GEMINI_API_KEY, GEMINI_MODEL, BASE_DIR
+from config.settings import BSE_HEADERS, GEMINI_API_KEY, GEMINI_MODEL, BASE_DIR, GUIDANCE_COOLDOWN_DAYS
 from src.storage.state_store import StateStore
 from src.scanners.equity_filter import EquityFilter
+from src.scanners.governance_filter import GovernanceFilter
 
 logger = logging.getLogger(__name__)
 
 class GuidanceScanner:
     """
-    Dual-Source Forward Management Guidance Scanner (v2.5.0):
-    1. Primary Stream: Official BSE Corporate LODR Disclosures (Investor Presentations, Concall Transcripts, Press Releases).
-    2. Secondary Stream: Real-Time Google News RSS (Moneycontrol, Economic Times, Livemint, CNBC-TV18).
-       - Zero Cloudflare / Akamai blocking risks on GitHub Actions.
-       - Captures CEO/MD media interviews and market briefings.
-    3. Quantitative LLM Extraction: Uses Gemini 3.5 Flash Lite (500 req/day free tier) with strict JSON output.
-    4. Guardrails:
-       - Dynamic FY/Quarter detection (zero hardcoded strings).
-       - (Symbol, Quarter) deduplication prevents multiple filings in the same quarter from spamming alerts.
-       - Paced 3.0s delay between LLM calls to respect free-tier RPM/TPM limits.
+    Hardened Dual-Stream Guidance & Forensic Governance Engine (v2.6.0):
+    1. Multi-Day Item & Stock Cooldown:
+       - Item-Level Cache: Remembers processed filing IDs and news articles for 14 days (zero redundant Gemini calls).
+       - Stock-Level Cooldown: Enforces a 45-day (or quarter-long) cooldown per stock (no duplicate alert spam).
+    2. Strict Pre-Alert Sanity & Forensic Governance Checks:
+       - Market Cap Floor: Strictly >= ₹5,000 Crore (verified via Nifty 500 master & BSE market quote).
+       - Zero ASM/GSM operator traps.
+       - Forensic Check: Scans BSE announcements for auditor resignations, forensic audits, SEBI orders,
+         and promoter pledge invocations over past 180 days.
+    3. Dual-Stream Detection:
+       - Stream 1: Official BSE Corporate LODR Disclosures (Concalls, Presentations).
+       - Stream 2: Google News RSS (Moneycontrol, Economic Times, Livemint, CNBC-TV18).
+    4. Quantitative LLM Extraction: Gemini 3.5 Flash Lite with dynamic period detection and governance checks.
     """
     def __init__(self, state_store: StateStore = None, gemini_api_key: str = GEMINI_API_KEY, model: str = GEMINI_MODEL):
         self.state_store = state_store or StateStore()
         self.equity_filter = EquityFilter()
+        self.governance_filter = GovernanceFilter()
         self.api_key = gemini_api_key.strip()
         self.model = model
         self.session = requests.Session()
@@ -40,12 +46,8 @@ class GuidanceScanner:
         return bool(self.api_key and self.api_key != "your_gemini_api_key_here")
 
     def _get_current_and_next_fy(self) -> Tuple[str, str, str]:
-        """
-        Dynamically calculates current and next Indian Fiscal Year and quarter based on current date.
-        Zero hardcoded year values.
-        """
+        """Dynamically calculates current and next Indian Fiscal Year and quarter based on date."""
         today = datetime.now()
-        # In India, Fiscal Year starts April 1 (month 4)
         if today.month >= 4:
             current_fy_end = today.year + 1
         else:
@@ -66,15 +68,20 @@ class GuidanceScanner:
         quarter_tag = f"{qtr}{current_fy}"
         return current_fy, next_fy, quarter_tag
 
-    def _load_history(self) -> Dict[str, str]:
+    def _load_history(self) -> Dict:
         path = BASE_DIR / "data" / "guidance_history.json"
         if path.exists():
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    if not isinstance(data, dict):
+                        data = {}
+                    data.setdefault("alerted_stocks", {})
+                    data.setdefault("processed_items", {})
+                    return data
             except Exception:
-                return {}
-        return {}
+                pass
+        return {"alerted_stocks": {}, "processed_items": {}}
 
     def _save_history(self):
         path = BASE_DIR / "data" / "guidance_history.json"
@@ -85,11 +92,54 @@ class GuidanceScanner:
         except Exception as e:
             logger.warning(f"Failed to persist guidance history: {e}")
 
+    def is_item_already_processed(self, item_id: str, max_age_days: int = 14) -> bool:
+        """Checks if the exact filing or news article was already parsed within max_age_days."""
+        processed = self.history.get("processed_items", {})
+        if item_id in processed:
+            try:
+                processed_time = datetime.fromisoformat(processed[item_id])
+                if (datetime.now() - processed_time).days < max_age_days:
+                    return True
+            except Exception:
+                return True
+        return False
+
+    def mark_item_processed(self, item_id: str):
+        """Records filing or article ID to prevent re-processing."""
+        self.history.setdefault("processed_items", {})[item_id] = datetime.now().isoformat()
+        self._save_history()
+
+    def is_stock_on_guidance_cooldown(self, symbol: str, quarter_tag: str, cooldown_days: int = GUIDANCE_COOLDOWN_DAYS) -> bool:
+        """
+        Enforces stock-level cooldown:
+        Prevents alerting the same stock multiple times within cooldown_days or for the same quarter.
+        """
+        sym = symbol.strip().upper()
+        alerted = self.history.get("alerted_stocks", {})
+        if sym in alerted:
+            record = alerted[sym]
+            last_quarter = record.get("quarter", "")
+            if last_quarter == quarter_tag:
+                return True
+            try:
+                last_alert_time = datetime.fromisoformat(record.get("timestamp", ""))
+                if (datetime.now() - last_alert_time).days < cooldown_days:
+                    return True
+            except Exception:
+                return True
+        return False
+
+    def record_stock_alerted(self, symbol: str, quarter_tag: str):
+        """Saves alerted stock to cooldown store."""
+        sym = symbol.strip().upper()
+        self.history.setdefault("alerted_stocks", {})[sym] = {
+            "quarter": quarter_tag,
+            "timestamp": datetime.now().isoformat()
+        }
+        self._save_history()
+
     def _extract_relevant_guidance_text(self, text: str, max_chars: int = 8000) -> str:
-        """
-        Slices text to keep only paragraphs mentioning forward guidance or operational targets.
-        Protects against TPM limits from large disclosures.
-        """
+        """Slices text to keep only paragraphs mentioning forward guidance or operational targets."""
         keywords = re.compile(r"(guidance|outlook|target|growth|margin|revenue|profit|PAT|EBITDA|capex|order book|CAGR)", re.IGNORECASE)
         paragraphs = text.split("\n")
         relevant_blocks = [p.strip() for p in paragraphs if keywords.search(p) and len(p.strip()) > 30]
@@ -100,9 +150,7 @@ class GuidanceScanner:
         return text[:max_chars]
 
     def analyze_guidance_with_gemini(self, context_title: str, raw_text: str) -> Optional[Dict]:
-        """
-        Calls Gemini 3.5 Flash Lite with structured JSON schema and dynamic period detection.
-        """
+        """Calls Gemini 3.5 Flash Lite with structured JSON schema and dynamic period detection."""
         if not self.is_gemini_configured():
             logger.warning("GEMINI_API_KEY not configured. Skipping LLM guidance extraction.")
             return None
@@ -128,6 +176,7 @@ class GuidanceScanner:
            - 20% or higher PAT (Profit After Tax) growth, OR
            - 20% or higher Revenue/Volume growth, OR
            - Major Capex expansion > 15% of gross block.
+        5. Check for any auditor qualifications, promoter pledge distress, or fraud allegations.
 
         Return strict JSON only (no markdown fences, no backticks):
         {{
@@ -136,7 +185,8 @@ class GuidanceScanner:
             "metric": "PAT" or "Revenue" or "Volume" or "Capex" or "None",
             "guidance_pct": float or null,
             "target_period": "{current_fy}" or "{next_fy}" or "Multi-Year",
-            "summary": "1 concise sentence explaining the specific forward guidance given"
+            "summary": "1 concise sentence explaining the specific forward guidance given",
+            "governance_risk": true or false
         }}
         """
 
@@ -170,9 +220,7 @@ class GuidanceScanner:
         return None
 
     def scan_bse_guidance(self) -> List[Dict]:
-        """
-        Stream 1: Polls BSE corporate announcements (LODR Investor Presentations, Concalls, Transcripts).
-        """
+        """Stream 1: Polls BSE corporate disclosures with multi-day deduplication and forensic checks."""
         url = "https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w"
         params = {
             "pageno": 1,
@@ -197,34 +245,56 @@ class GuidanceScanner:
                     desc = str(item.get("MORE", "") or item.get("HEADLINE", "")).strip()
                     company_raw = str(item.get("SLONGNAME", "")).strip()
                     combined_text = f"{headline} {desc}"
+                    scrip = str(item.get("SCRIP_CD", "")).strip().upper()
+                    attach = str(item.get("ATTACHMENTNAME", "")).strip()
+
+                    # Deduplication 1: Item-Level Check (skip exact filing if processed in last 14 days)
+                    item_id = f"bse_{attach or (scrip + '_' + str(item.get('NEWS_DT', '')))}"
+                    if self.is_item_already_processed(item_id):
+                        continue
 
                     # Pre-filter by relevant disclosure subject line first
                     if any(k in combined_text.lower() for k in ["investor presentation", "concall", "guidance", "transcript", "analyst meet", "outlook", "press release"]):
-                        scrip = str(item.get("SCRIP_CD", "")).strip().upper()
                         symbol = self.equity_filter.resolve_symbol(company_raw, scrip)
                         if not symbol:
+                            self.mark_item_processed(item_id)
                             continue
 
-                        # Exclude non-equities (ETFs, REITs)
+                        # Exclude non-equities
                         if not self.equity_filter.is_valid_operating_stock(symbol):
+                            self.mark_item_processed(item_id)
                             continue
 
                         # Check state persistence (permaban / 30-day drop)
                         if self.state_store.is_ticker_silenced(symbol):
+                            self.mark_item_processed(item_id)
                             continue
 
-                        # Deduplication check: Avoid alerting twice for same (symbol, quarter)
-                        dedup_key = f"{symbol}:{quarter_tag}"
-                        if dedup_key in self.history:
+                        # Deduplication 2: Stock-Level Cooldown (skip if already alerted in past 45 days)
+                        if self.is_stock_on_guidance_cooldown(symbol, quarter_tag):
+                            logger.info(f"Skipping {symbol}: on guidance cooldown for {quarter_tag}")
+                            self.mark_item_processed(item_id)
                             continue
 
                         # Paced API call (sleep 3s to respect free-tier RPM)
                         time.sleep(3)
                         gemini_res = self.analyze_guidance_with_gemini(f"{symbol} ({company_raw})", combined_text)
+                        self.mark_item_processed(item_id)
                         
                         if gemini_res and gemini_res.get("has_20pct_guidance"):
+                            # Check Gemini governance flag
+                            if gemini_res.get("governance_risk"):
+                                logger.warning(f"Rejecting {symbol}: Gemini flagged corporate governance risk.")
+                                continue
+
                             pct = gemini_res.get("guidance_pct", 20.0)
                             if pct and pct >= 20.0:
+                                # Rigorous Sanity Check: Market Cap >= ₹5,000 Cr & No Fraud / Promoter issues
+                                sanity = self.governance_filter.verify_stock_sanity(symbol, scrip)
+                                if not sanity["is_sane"]:
+                                    logger.warning(f"Rejecting {symbol}: Failed sanity check ({sanity['rejection_reason']})")
+                                    continue
+
                                 period = gemini_res.get("target_period", current_fy)
                                 high_guidance_hits.append({
                                     "symbol": symbol,
@@ -234,11 +304,11 @@ class GuidanceScanner:
                                     "guidance_pct": pct,
                                     "period": period,
                                     "summary": gemini_res.get("summary", ""),
+                                    "mcap_label": sanity["mcap_label"],
                                     "quarter_tag": quarter_tag
                                 })
-                                # Mark as seen in history
-                                self.history[dedup_key] = datetime.now().isoformat()
-                                self._save_history()
+                                # Mark stock as alerted in history (triggers 45-day cooldown)
+                                self.record_stock_alerted(symbol, quarter_tag)
 
         except Exception as e:
             logger.error(f"Error scanning BSE guidance filings: {e}")
@@ -246,10 +316,7 @@ class GuidanceScanner:
         return high_guidance_hits
 
     def scan_google_news_guidance(self) -> List[Dict]:
-        """
-        Stream 2: Polls Google News RSS for Indian Equities forward guidance (Moneycontrol, Economic Times, Livemint, CNBC-TV18).
-        Cloud-safe RSS XML: Zero Cloudflare challenges or IP blocks on GitHub Actions runners.
-        """
+        """Stream 2: Polls Google News RSS with multi-day deduplication and forensic checks."""
         rss_url = (
             "https://news.google.com/rss/search?"
             "q=guidance+OR+outlook+OR+target+when:24h+inurl:moneycontrol+OR+inurl:economictimes+OR+inurl:livemint"
@@ -266,12 +333,16 @@ class GuidanceScanner:
                 items = root.findall(".//item")
                 logger.info(f"Found {len(items)} news headlines in Google News feed.")
                 
-                # Check top 20 items to respect rate limits
                 for item in items[:20]:
                     title = item.findtext("title", "").strip()
                     desc = item.findtext("description", "").strip()
                     clean_desc = re.sub(r"<[^>]+>", " ", desc).strip()
                     combined_text = f"{title}. {clean_desc}"
+
+                    # Deduplication 1: Item-level hash check
+                    item_id = f"news_{hashlib.md5(title.encode()).hexdigest()[:12]}"
+                    if self.is_item_already_processed(item_id):
+                        continue
 
                     # Quick pre-filter: must contain forward guidance keywords
                     if not any(k in combined_text.lower() for k in ["guidance", "target", "outlook", "growth", "pat", "revenue", "cagr", "capex", "ebitda"]):
@@ -283,8 +354,13 @@ class GuidanceScanner:
                     # Paced API call (sleep 3s to respect free-tier RPM)
                     time.sleep(3)
                     gemini_res = self.analyze_guidance_with_gemini(title, combined_text)
+                    self.mark_item_processed(item_id)
 
                     if gemini_res and gemini_res.get("has_20pct_guidance"):
+                        if gemini_res.get("governance_risk"):
+                            logger.warning(f"Rejecting news item {title}: Corporate governance risk detected.")
+                            continue
+
                         pct = gemini_res.get("guidance_pct", 20.0)
                         if pct and pct >= 20.0:
                             extracted_sym = gemini_res.get("symbol", "").upper().strip()
@@ -296,8 +372,14 @@ class GuidanceScanner:
                             if self.state_store.is_ticker_silenced(resolved_sym):
                                 continue
 
-                            dedup_key = f"{resolved_sym}:{quarter_tag}"
-                            if dedup_key in self.history:
+                            # Deduplication 2: Stock-level cooldown
+                            if self.is_stock_on_guidance_cooldown(resolved_sym, quarter_tag):
+                                continue
+
+                            # Rigorous Sanity Check: Market Cap >= ₹5,000 Cr & No Fraud
+                            sanity = self.governance_filter.verify_stock_sanity(resolved_sym)
+                            if not sanity["is_sane"]:
+                                logger.warning(f"Rejecting {resolved_sym}: Failed sanity check ({sanity['rejection_reason']})")
                                 continue
 
                             period = gemini_res.get("target_period", current_fy)
@@ -310,10 +392,10 @@ class GuidanceScanner:
                                 "guidance_pct": pct,
                                 "period": period,
                                 "summary": gemini_res.get("summary", ""),
+                                "mcap_label": sanity["mcap_label"],
                                 "quarter_tag": quarter_tag
                             })
-                            self.history[dedup_key] = datetime.now().isoformat()
-                            self._save_history()
+                            self.record_stock_alerted(resolved_sym, quarter_tag)
 
         except Exception as e:
             logger.error(f"Error scanning Google News RSS for guidance: {e}")
@@ -321,11 +403,7 @@ class GuidanceScanner:
         return news_hits
 
     def scan_all_guidance(self) -> List[Dict]:
-        """
-        Executes Dual-Stream Guidance Detection:
-        1. BSE Corporate LODR Disclosures
-        2. Google News RSS Feeds
-        """
+        """Executes Dual-Stream Guidance Detection with forensic sanity verification."""
         all_hits = []
         bse_hits = self.scan_bse_guidance()
         all_hits.extend(bse_hits)

@@ -25,6 +25,7 @@ def run_guidance():
     for h in hits:
         metrics = [
             f"<b>Source:</b> {h.get('source', 'Corporate Filing')}",
+            f"<b>Quality & Scale:</b> {h.get('mcap_label', 'Market Cap >= ₹5,000 Cr Verified')}",
             f"<b>Guided Metric:</b> {h['metric']} Growth",
             f"<b>Target Growth:</b> <code>+{h['guidance_pct']}%</code>",
             f"<b>Target Period:</b> {h['period']} ({h.get('quarter_tag', '')})"

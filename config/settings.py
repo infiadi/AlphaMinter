@@ -41,6 +41,10 @@ MIN_REACTION_DELIV_PCT = float(os.getenv("MIN_REACTION_DELIV_PCT", "50.0"))
 RETAIL_INVESTMENT_LIMIT_SAFE = float(os.getenv("RETAIL_INVESTMENT_LIMIT_SAFE", "185000.0"))
 STCG_TAX_RATE = float(os.getenv("STCG_TAX_RATE", "0.20"))  # 20% STCG on Tender Buybacks
 
+# Market Cap & Governance Sanity Thresholds
+MIN_MARKET_CAP_CR = float(os.getenv("MIN_MARKET_CAP_CR", "5000.0"))  # Strictly >= ₹5,000 Crore Market Cap
+GUIDANCE_COOLDOWN_DAYS = int(os.getenv("GUIDANCE_COOLDOWN_DAYS", "45"))  # Multi-day cooldown per stock
+
 # Request Headers
 NSE_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",

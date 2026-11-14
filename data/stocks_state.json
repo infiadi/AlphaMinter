@@ -1,6 +1,6 @@
 {
   "_metadata": {
-    "last_updated": "2026-11-14T18:44:02.580810",
+    "last_updated": "2026-11-15T00:32:25.425522",
     "last_telegram_offset": 357813248
   },
   "stocks": {
@@ -27,5 +27,8 @@
         "JPL"
       ]
     }
-  }
+  },
+  "silenced_tickers": [
+    "GOLDIETF"
+  ]
 }

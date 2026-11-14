@@ -6,9 +6,10 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-# Telegram Configuration
+# Telegram & Cloudflare Worker Configuration
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+WORKER_URL = os.getenv("WORKER_URL", "https://alphaminter-bot.adityabhandari162.workers.dev").rstrip("/")
 
 # Paths
 DATA_DIR = BASE_DIR / "data"

@@ -3,20 +3,12 @@ name: 1. Bhavcopy Delivery Accumulation Scanner
 on:
   schedule:
     # 13:15 UTC = 6:45 PM IST (Monday through Friday)
-    # Timed after NSE uploads sec_bhavdata_full (typically 5:30 - 6:30 PM IST)
     - cron: '15 13 * * 1-5'
   workflow_dispatch:
-
-# Prevents concurrent jobs from creating Git merge conflicts on stocks_state.json
-concurrency:
-  group: alphaminter-state-lock
-  cancel-in-progress: false
 
 jobs:
   bhavcopy-scanner:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout Repository
@@ -37,19 +29,8 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          WORKER_URL: https://alphaminter-bot.adityabhandari162.workers.dev
           MIN_DELIVERY_PCT: 65.0
           MIN_DELIVERY_TURNOVER_CR: 5.0
         run: |
           python run_eod_pipeline.py
-
-      - name: Commit & Push Updated stocks_state.json
-        run: |
-          git config --global user.name "AlphaMinter Bot"
-          git config --global user.email "alphaminter-bot@users.noreply.github.com"
-          git add data/stocks_state.json || true
-          if git diff --staged --quiet; then
-            echo "No state changes to commit."
-          else
-            git commit -m "Auto-update stocks_state.json (Telegram triage taps & alert log) [skip ci]"
-            git push
-          fi

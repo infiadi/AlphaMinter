@@ -3,19 +3,12 @@ name: 2. PEAD Earnings Drift Scanner
 on:
   schedule:
     # 13:30 UTC = 7:00 PM IST (Monday through Saturday)
-    # Polls BSE results & cross-checks reaction session delivery
     - cron: '30 13 * * 1-6'
   workflow_dispatch:
-
-concurrency:
-  group: alphaminter-state-lock
-  cancel-in-progress: false
 
 jobs:
   pead-scanner:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout Repository
@@ -36,17 +29,6 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          WORKER_URL: https://alphaminter-bot.adityabhandari162.workers.dev
         run: |
-          python -c "from src.storage.state_store import StateStore; from src.scanners.pead_scanner import PEADScanner; s = StateStore(); s.drain_telegram_updates(); scanner = PEADScanner(state_store=s); res = scanner.fetch_bse_financial_results(); print(f'PEAD scan complete. Polled {len(res)} filings.')"
-
-      - name: Commit & Push Updated stocks_state.json
-        run: |
-          git config --global user.name "AlphaMinter Bot"
-          git config --global user.email "alphaminter-bot@users.noreply.github.com"
-          git add data/stocks_state.json || true
-          if git diff --staged --quiet; then
-            echo "No state changes to commit."
-          else
-            git commit -m "Auto-update stocks_state.json (PEAD updates) [skip ci]"
-            git push
-          fi
+          python -c "from src.storage.state_store import StateStore; from src.scanners.pead_scanner import PEADScanner; s = StateStore(); scanner = PEADScanner(state_store=s); res = scanner.fetch_bse_financial_results(); print(f'PEAD scan complete. Polled {len(res)} filings.')"

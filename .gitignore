@@ -1,0 +1,15 @@
+# Environment Secrets
+.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+
+# Local data caches (Cloudflare D1 is the single source of truth)
+data/*.db
+data/*.json

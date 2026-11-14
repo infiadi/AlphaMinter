@@ -12,11 +12,7 @@ def run_eod():
     state_store = StateStore()
     dispatcher = TelegramDispatcher()
     
-    # 1. Drain any 1-Tap Triage Buttons clicked on your phone over the last 24h
-    logger.info("Checking for pending Telegram button taps...")
-    state_store.drain_telegram_updates()
-
-    # 2. Run Bhavcopy Delivery Accumulation Scanner
+    # 1. Run Bhavcopy Delivery Accumulation Scanner
     logger.info("Executing Bhavcopy Delivery % Scanner...")
     delivery_scanner = BhavcopyDeliveryScanner(state_store=state_store)
     delivery_hits = delivery_scanner.scan_accumulation()
@@ -27,15 +23,11 @@ def run_eod():
 
     today_str = datetime.now().strftime("%d-%b-%Y")
     
-    # 3. Dispatch Delivery Alerts with 1-Tap Triage Buttons
+    # 2. Dispatch Delivery Alerts with 1-Tap Triage Buttons
     if top_delivery:
         for stock in top_delivery:
             symbol = stock['symbol']
             
-            # Prevent duplicate alerts on same date
-            if state_store.is_already_alerted_today(symbol, "DELIVERY_ACCUMULATION"):
-                continue
-
             metrics = [
                 f"<b>Delivery %:</b> <code>{stock['delivery_pct']}%</code>",
                 f"<b>CMP:</b> ₹{stock['cmp']} (Day Change: {stock['price_change_pct']}%)",
@@ -52,10 +44,8 @@ def run_eod():
                 thesis=thesis,
                 buttons=True
             )
-            
-            state_store.log_alert(symbol, "DELIVERY_ACCUMULATION", f"Delivery: {stock['delivery_pct']}%")
 
-    # 4. Dispatch Executive Daily EOD Summary
+    # 3. Dispatch Executive Daily EOD Summary
     summary_lines = [
         f"<b>📊 ALPHAMINTER EOD WRAP ({today_str})</b>",
         f"<i>Automated Market Scan (Delivery Spikes & Smart Money)</i>\n"

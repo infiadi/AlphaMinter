@@ -10,6 +10,7 @@ load_dotenv(BASE_DIR / ".env")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 WORKER_URL = os.getenv("WORKER_URL", "https://alphaminter-bot.adityabhandari162.workers.dev").rstrip("/")
+INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "")
 
 # Paths
 DATA_DIR = BASE_DIR / "data"

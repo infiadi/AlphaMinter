@@ -1,20 +1,27 @@
 /**
- * AlphaMinter Telegram Signal-Triage & State Engine
- * Cloudflare Worker + Cloudflare D1 (Permanent Free Tier)
+ * AlphaMinter Telegram Signal-Triage & State Engine (Hardened & Secure)
+ * Cloudflare Worker + Cloudflare D1
  * 
- * Features:
- * 1. Handles Telegram inline button callbacks in <100ms
- * 2. Manages stocks_state in Cloudflare D1 SQL database
- * 3. Answers text commands (/watchlist, /banned)
- * 4. Exposes HTTPS /api/silenced-list for GitHub Actions
+ * Security Features:
+ * 1. Strict Chat ID Whitelisting: Ignores any request not originating from YOUR personal TELEGRAM_CHAT_ID.
+ * 2. Protected Internal API: /api/silenced-list requires matching X-Internal-Secret header.
  */
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // 1. API endpoint for GitHub Actions: Fetch list of all silenced stocks
+    // 1. Protected API endpoint for GitHub Actions
     if (url.pathname === "/api/silenced-list") {
+      // Security Guard: Verify internal secret if configured
+      const authHeader = request.headers.get("X-Internal-Secret");
+      if (env.INTERNAL_SECRET && authHeader !== env.INTERNAL_SECRET) {
+        return new Response(JSON.stringify({ error: "Unauthorized access" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
       const today = new Date().toISOString().split("T")[0];
       const { results } = await env.DB.prepare(
         "SELECT symbol FROM stocks_state WHERE status = 'PERMABAN' OR (status = 'DROPPED_TEMP' AND cooldown_until >= ?)"
@@ -23,10 +30,19 @@ export default {
       return new Response(JSON.stringify({ silenced }), { headers: { "Content-Type": "application/json" } });
     }
 
-    // 2. Telegram Webhook Handler (Instant <100ms response)
+    // 2. Telegram Webhook Handler (Strict Whitelist)
     if (request.method === "POST") {
       try {
         const update = await request.json();
+        
+        // Security Guard: Extract incoming Chat ID
+        const incomingChatId = update.callback_query?.message?.chat?.id || update.message?.chat?.id;
+
+        // Strict Authorization: If TELEGRAM_CHAT_ID is set, reject any stranger trying to use your bot
+        if (env.TELEGRAM_CHAT_ID && incomingChatId && incomingChatId.toString() !== env.TELEGRAM_CHAT_ID.toString()) {
+          console.warn(`Unauthorized access attempt from Chat ID: ${incomingChatId}`);
+          return new Response("Forbidden", { status: 403 });
+        }
 
         // Handle 1-Tap Button Clicks
         if (update.callback_query) {

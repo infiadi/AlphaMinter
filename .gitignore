@@ -15,7 +15,10 @@ venv/
 .wrangler/
 .dev.vars
 
-# Local data caches & logs (Cloudflare D1 is the single source of truth)
+# Local data caches & logs
 data/*.db
 data/*.json
+data/.screener_session.json
+data/prepared_queues/
+logs/
 *.log

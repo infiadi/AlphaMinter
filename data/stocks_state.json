@@ -1,11 +1,16 @@
 {
   "_metadata": {
-    "last_updated": "2026-11-14T23:55:00.344102",
-    "last_telegram_offset": 357813241
+    "last_updated": "2026-11-14T18:41:02.377688",
+    "last_telegram_offset": 357813244
   },
   "stocks": {
     "TRENT": {
       "status": "WATCHLIST",
+      "updated_at": "2026-11-14"
+    },
+    "GOLDIETF": {
+      "status": "DROPPED_TEMP",
+      "cooldown_until": "2026-12-14",
       "updated_at": "2026-11-14"
     }
   },

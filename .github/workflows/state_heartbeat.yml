@@ -1,0 +1,14 @@
+name: 4. State Heartbeat & Keepalive
+
+on:
+  schedule:
+    # Runs every Sunday at 00:00 UTC to prevent GitHub Actions from automatically disabling scheduled runs
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keepalive Heartbeat
+        run: echo "AlphaMinter Cron Keepalive Ping: $(date -u)"

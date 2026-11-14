@@ -1,0 +1,49 @@
+name: 3. Buyback Arbitrage Monitor
+
+on:
+  schedule:
+    # 13:45 UTC = 7:15 PM IST (Monday through Friday)
+    - cron: '45 13 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: alphaminter-state-lock
+  cancel-in-progress: false
+
+jobs:
+  buyback-monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Execute Buyback Arbitrage Calculator
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -c "from src.storage.state_store import StateStore; from src.arbitrage.buyback_arb import BuybackArbitrageCalculator; s = StateStore(); s.drain_telegram_updates(); calc = BuybackArbitrageCalculator(state_store=s); print('Buyback monitor executed.')"
+
+      - name: Commit & Push Updated stocks_state.json
+        run: |
+          git config --global user.name "AlphaMinter Bot"
+          git config --global user.email "alphaminter-bot@users.noreply.github.com"
+          git add data/stocks_state.json || true
+          if git diff --staged --quiet; then
+            echo "No state changes to commit."
+          else
+            git commit -m "Auto-update stocks_state.json (Buyback monitor) [skip ci]"
+            git push
+          fi

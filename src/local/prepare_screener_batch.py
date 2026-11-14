@@ -220,6 +220,15 @@ def evaluate_negative_flags(
 
     is_fin = metrics.get("is_financial_sector", False)
 
+    # 0. NEG_NET_LOSS: Absolute loss-making or cash-burning traps (e.g. Vodafone Idea)
+    pl = dossier.get("profit_loss", {}).get("data", {})
+    net_profit_row = pl.get("Net Profit") or []
+    latest_pat = net_profit_row[-1] if net_profit_row else None
+    pat_3y_sum = sum([v for v in net_profit_row[-3:] if v is not None]) if len(net_profit_row) >= 3 else None
+    if (latest_pat is not None and latest_pat <= 0) or (pat_3y_sum is not None and pat_3y_sum <= 0):
+        flags.append("NEG_NET_LOSS")
+        reasons["NEG_NET_LOSS"] = f"Negative net profit (Latest PAT: ₹{latest_pat} Cr, 3Y Sum: ₹{pat_3y_sum} Cr). Disqualified as loss-making / value trap."
+
     # 1. NEG_ROCE (Evaluated via ROE for Banks/NBFCs)
     if "NEG_ROCE" not in exempt_flags:
         global_min_roce = float(global_filters.get("min_roce_pct", 10.0))
@@ -487,24 +496,74 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         f"Instant Screen Rejections={len(rejected_candidates)}"
     )
 
-    # Step D: Prioritize Confluence & High ROCE for Deep Dossier Fetching
-    screen_passed_candidates.sort(
+    # Step D: Balanced Screen Allocation for Deep Dossier Fetching
+    # Ensures representation from:
+    # 1. Multi-Screen Confluence (all screen_count >= 2)
+    # 2. Bruised Bluechips (sorted by Market Cap & Margin of Safety / Discount from ATH) -> Guarantees TCS, ITC, HUL
+    # 3. Super High Growth (sorted by 3Y/5Y growth)
+    # 4. Midcap Opportunity (sorted by ROCE)
+
+    multi_screen = [c for c in screen_passed_candidates if c.get("screen_count", 1) >= 2]
+    
+    # Bruised Bluechips: Sort by Market Cap descending (giants like TCS, ITC, HUL first)
+    bruised_bluechips = [
+        c for c in screen_passed_candidates
+        if "Bruised Bluechips" in c.get("matched_screens", []) and c.get("screen_count", 1) == 1
+    ]
+    bruised_bluechips.sort(
         key=lambda c: (
-            c.get("screen_count", 1),
-            extract_screen_metric(c.get("screen_metrics", {}), ["roce"]) or 0.0
+            extract_screen_metric(c.get("screen_metrics", {}), ["mar cap", "market cap"]) or 0.0,
+            extract_screen_metric(c.get("screen_metrics", {}), ["down ath", "down %"]) or 0.0
         ),
         reverse=True
     )
 
-    max_dossiers = limit if (limit and limit > 0) else int(settings.get("max_dossiers_to_fetch", 25))
-    if len(screen_passed_candidates) > max_dossiers:
-        logger.info(
-            f"Prioritizing top {max_dossiers} highest-confluence/quality candidates for deep dossier analysis "
-            f"(out of {len(screen_passed_candidates)} screen survivors)."
-        )
-        candidates_to_fetch = screen_passed_candidates[:max_dossiers]
-    else:
-        candidates_to_fetch = screen_passed_candidates
+    # Super High Growth: Sort by 3Y profit growth & sales growth
+    growth_stocks = [
+        c for c in screen_passed_candidates
+        if "Super High Growth Companies in Long Term" in c.get("matched_screens", []) and c.get("screen_count", 1) == 1
+    ]
+    growth_stocks.sort(
+        key=lambda c: (
+            extract_screen_metric(c.get("screen_metrics", {}), ["profit var 3yrs", "profit var 3"]) or 0.0,
+            extract_screen_metric(c.get("screen_metrics", {}), ["sales growth"]) or 0.0
+        ),
+        reverse=True
+    )
+
+    # Midcap Opportunity: Sort by ROCE
+    midcap_stocks = [
+        c for c in screen_passed_candidates
+        if "Midcap Opportunity" in c.get("matched_screens", []) and c.get("screen_count", 1) == 1
+    ]
+    midcap_stocks.sort(
+        key=lambda c: extract_screen_metric(c.get("screen_metrics", {}), ["roce"]) or 0.0,
+        reverse=True
+    )
+
+    # Balanced assembly of candidates to audit
+    selected_dict: Dict[str, Dict[str, Any]] = {}
+    for c in multi_screen:
+        selected_dict[c["symbol"]] = c
+    for c in bruised_bluechips[:15]:
+        if c["symbol"] not in selected_dict:
+            selected_dict[c["symbol"]] = c
+    for c in growth_stocks[:10]:
+        if c["symbol"] not in selected_dict:
+            selected_dict[c["symbol"]] = c
+    for c in midcap_stocks[:10]:
+        if c["symbol"] not in selected_dict:
+            selected_dict[c["symbol"]] = c
+
+    candidates_to_fetch = list(selected_dict.values())
+    if limit and limit > 0:
+        candidates_to_fetch = candidates_to_fetch[:limit]
+
+    logger.info(
+        f"Balanced Audit Queue: {len(candidates_to_fetch)} candidates selected for deep dossier analysis: "
+        f"Multi-screen={len(multi_screen)}, Bruised Bluechips={len(bruised_bluechips[:15])}, "
+        f"High Growth={len(growth_stocks[:10])}, Midcap={len(midcap_stocks[:10])}"
+    )
 
     # Step E: PASS 2 - Deep Financial Dossier Fetch & Multi-Year Indicator Audit
     for idx, cand in enumerate(candidates_to_fetch, 1):
@@ -527,6 +586,24 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         cand["negative_flag_reasons"] = flag_reasons
 
         if len(flags) > max_neg_flags:
+            # Check for Soft-Gate Exemption (Large-Cap / Bruised Bluechip with cyclical headwinds)
+            mcap_val = dossier.get("derived_metrics", {}).get("market_cap_cr") or dossier.get("top_ratios", {}).get("Market Cap") or 0.0
+            is_bluechip = mcap_val >= 25000 or ("Bruised Bluechips" in cand.get("matched_screens", []))
+            has_fatal = "NEG_NET_LOSS" in flags or "NEG_LOW_MCAP" in flags
+            pledge_pct = dossier.get("derived_metrics", {}).get("promoter_pledge_pct", 0.0) or 0.0
+
+            if is_bluechip and not has_fatal and pledge_pct <= 5.0 and len(flags) <= 2:
+                logger.info(
+                    f"SOFT-GATE EXEMPTION for {sym} ({cand['name']}): Market Cap ₹{mcap_val:.0f} Cr bluechip with {flags}. "
+                    f"Passing to AI Subagent for qualitative review on Sector Cyclicality vs Margin of Safety."
+                )
+                cand["needs_agent_review"] = True
+                cand["review_reason"] = f"Bluechip experiencing temporary sector/cyclical headwinds ({', '.join(flags)}). Agent to evaluate Margin of Safety."
+                cand["negative_flags"] = flags
+                cand["negative_flag_reasons"] = flag_reasons
+                qualified_candidates.append(cand)
+                continue
+
             logger.warning(
                 f"REJECTED {sym} ({cand['name']}): {len(flags)} negative flags > allowed {max_neg_flags}. "
                 f"Flags: {flags}"

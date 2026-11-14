@@ -1,0 +1,601 @@
+{
+  "symbol": "IRCTC",
+  "name": "Indian Railway Catering & Tourism Corporation Ltd",
+  "about": "Incorporated in 1999, IRCTC is a Navratna (Category 1, Central Public Sector Enterprises ) and the only company authorized by the Indian government to provide online railway tickets, catering services, and packaged drinking waterat railway stations and trains in India[1]",
+  "is_consolidated": true,
+  "sector": "Consumer Discretionary",
+  "industry": "Tour, Travel Related Services",
+  "top_ratios": {
+    "Market Cap": 36616.0,
+    "Current Price": 458.0,
+    "High / Low": 716.0,
+    "Stock P/E": 26.6,
+    "Book Value": 60.8,
+    "Dividend Yield": 1.97,
+    "ROCE": 46.1,
+    "ROE": 34.7,
+    "Face Value": 2.0
+  },
+  "pros": [
+    "Company is almost debt free.",
+    "Company has a good return on equity (ROE) track record: 3 Years ROE 37.1%",
+    "Company has been maintaining a healthy dividend payout of 49.0%"
+  ],
+  "cons": [
+    "Stock is trading at 7.53 times its book value"
+  ],
+  "compounded_growth": {
+    "Compounded Sales Growth": {
+      "10 Years": "%",
+      "5 Years": "%",
+      "3 Years": "14%",
+      "TTM": "17%"
+    },
+    "Compounded Profit Growth": {
+      "10 Years": "%",
+      "5 Years": "%",
+      "3 Years": "12%",
+      "TTM": "3%"
+    },
+    "Stock Price CAGR": {
+      "10 Years": "%",
+      "5 Years": "-13%",
+      "3 Years": "-12%",
+      "1 Year": "-35%"
+    },
+    "Return on Equity": {
+      "10 Years": "%",
+      "5 Years": "%",
+      "3 Years": "37%",
+      "Last Year": "35%"
+    }
+  },
+  "quarters": {
+    "headers": [
+      "Sep 2023",
+      "Dec 2023",
+      "Mar 2024",
+      "Jun 2024",
+      "Sep 2024",
+      "Dec 2024",
+      "Mar 2025",
+      "Jun 2025",
+      "Sep 2025",
+      "Dec 2025",
+      "Mar 2026",
+      "Jun 2026",
+      "Sep 2026"
+    ],
+    "data": {
+      "Sales": [
+        991.0,
+        1118.0,
+        1155.0,
+        1118.0,
+        1064.0,
+        1225.0,
+        1269.0,
+        1160.0,
+        1146.0,
+        1449.0,
+        1460.0,
+        1370.0,
+        1333.0
+      ],
+      "YoY Sales growth": [
+        null,
+        null,
+        20.0,
+        12.0,
+        7.0,
+        10.0,
+        10.0,
+        4.0,
+        8.0,
+        18.0,
+        15.0,
+        18.0,
+        16.0
+      ],
+      "Expenses": [
+        625.0,
+        724.0,
+        792.0,
+        743.0,
+        691.0,
+        808.0,
+        883.0,
+        762.0,
+        742.0,
+        984.0,
+        1061.0,
+        983.0,
+        925.0
+      ],
+      "Operating Profit": [
+        367.0,
+        394.0,
+        362.0,
+        375.0,
+        373.0,
+        417.0,
+        385.0,
+        397.0,
+        404.0,
+        465.0,
+        399.0,
+        387.0,
+        408.0
+      ],
+      "OPM %": [
+        37.0,
+        35.0,
+        31.0,
+        34.0,
+        35.0,
+        34.0,
+        30.0,
+        34.0,
+        35.0,
+        32.0,
+        27.0,
+        28.0,
+        31.0
+      ],
+      "Other Income": [
+        47.0,
+        31.0,
+        41.0,
+        54.0,
+        60.0,
+        57.0,
+        107.0,
+        61.0,
+        69.0,
+        81.0,
+        67.0,
+        72.0,
+        -36.0
+      ],
+      "Interest": [
+        4.0,
+        5.0,
+        5.0,
+        3.0,
+        3.0,
+        3.0,
+        8.0,
+        4.0,
+        4.0,
+        5.0,
+        5.0,
+        4.0,
+        4.0
+      ],
+      "Depreciation": [
+        14.0,
+        14.0,
+        16.0,
+        14.0,
+        13.0,
+        13.0,
+        12.0,
+        12.0,
+        11.0,
+        12.0,
+        14.0,
+        12.0,
+        12.0
+      ],
+      "Profit before tax": [
+        395.0,
+        406.0,
+        382.0,
+        412.0,
+        417.0,
+        457.0,
+        472.0,
+        442.0,
+        457.0,
+        529.0,
+        447.0,
+        442.0,
+        356.0
+      ],
+      "Tax %": [
+        25.0,
+        26.0,
+        26.0,
+        25.0,
+        26.0,
+        25.0,
+        24.0,
+        25.0,
+        25.0,
+        25.0,
+        27.0,
+        25.0,
+        26.0
+      ],
+      "Net Profit": [
+        295.0,
+        300.0,
+        284.0,
+        308.0,
+        308.0,
+        341.0,
+        358.0,
+        331.0,
+        342.0,
+        394.0,
+        326.0,
+        330.0,
+        264.0
+      ],
+      "EPS in Rs": [
+        3.68,
+        3.75,
+        3.55,
+        3.85,
+        3.85,
+        4.26,
+        4.48,
+        4.13,
+        4.28,
+        4.93,
+        4.08,
+        4.13,
+        3.29
+      ],
+      "Raw PDF": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "profit_loss": {
+    "headers": [
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026",
+      "TTM"
+    ],
+    "data": {
+      "Sales": [
+        3541.0,
+        4260.0,
+        4675.0,
+        5215.0,
+        5612.0
+      ],
+      "Sales growth": [
+        null,
+        20.0,
+        10.0,
+        12.0,
+        17.0
+      ],
+      "Expenses": [
+        2265.0,
+        2794.0,
+        3124.0,
+        3549.0,
+        3953.0
+      ],
+      "Operating Profit": [
+        1276.0,
+        1466.0,
+        1551.0,
+        1666.0,
+        1659.0
+      ],
+      "OPM %": [
+        36.0,
+        34.0,
+        33.0,
+        32.0,
+        30.0
+      ],
+      "Other Income": [
+        148.0,
+        106.0,
+        276.0,
+        277.0,
+        183.0
+      ],
+      "Interest": [
+        16.0,
+        19.0,
+        17.0,
+        18.0,
+        18.0
+      ],
+      "Depreciation": [
+        54.0,
+        57.0,
+        53.0,
+        50.0,
+        51.0
+      ],
+      "Profit before tax": [
+        1354.0,
+        1496.0,
+        1757.0,
+        1875.0,
+        1774.0
+      ],
+      "Tax %": [
+        26.0,
+        26.0,
+        25.0,
+        26.0,
+        null
+      ],
+      "Net Profit": [
+        1006.0,
+        1111.0,
+        1315.0,
+        1393.0,
+        1314.0
+      ],
+      "EPS in Rs": [
+        12.57,
+        13.89,
+        16.44,
+        17.42,
+        16.43
+      ],
+      "Dividend Payout %": [
+        44.0,
+        47.0,
+        49.0,
+        52.0,
+        null
+      ]
+    }
+  },
+  "balance_sheet": {
+    "headers": [
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026",
+      "Sep 2026"
+    ],
+    "data": {
+      "Equity Capital": [
+        160.0,
+        160.0,
+        160.0,
+        160.0,
+        160.0
+      ],
+      "Reserves": [
+        2318.0,
+        3070.0,
+        3503.0,
+        4149.0,
+        4702.0
+      ],
+      "Borrowings": [
+        84.0,
+        60.0,
+        90.0,
+        81.0,
+        75.0
+      ],
+      "Other Liabilities": [
+        2526.0,
+        2801.0,
+        3046.0,
+        3190.0,
+        4119.0
+      ],
+      "Total Liabilities": [
+        5089.0,
+        6091.0,
+        6799.0,
+        7580.0,
+        9057.0
+      ],
+      "Fixed Assets": [
+        351.0,
+        343.0,
+        813.0,
+        839.0,
+        851.0
+      ],
+      "CWIP": [
+        34.0,
+        443.0,
+        27.0,
+        42.0,
+        47.0
+      ],
+      "Investments": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Other Assets": [
+        4704.0,
+        5306.0,
+        5959.0,
+        6699.0,
+        8159.0
+      ],
+      "Total Assets": [
+        5089.0,
+        6091.0,
+        6799.0,
+        7580.0,
+        9057.0
+      ]
+    }
+  },
+  "cash_flows": {
+    "headers": [
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026"
+    ],
+    "data": {
+      "Cash from Operating Activity": [
+        812.0,
+        882.0,
+        833.0,
+        1273.0
+      ],
+      "Cash from Investing Activity": [
+        -317.0,
+        -200.0,
+        -258.0,
+        -446.0
+      ],
+      "Cash from Financing Activity": [
+        -434.0,
+        -404.0,
+        -910.0,
+        -787.0
+      ],
+      "Net Cash Flow": [
+        61.0,
+        277.0,
+        -334.0,
+        40.0
+      ],
+      "Free Cash Flow": [
+        744.0,
+        650.0,
+        786.0,
+        1196.0
+      ],
+      "CFO/EBITDAShare of operating profit converting into cash: CFO (before tax) / Operating Profit": [
+        97.0,
+        91.0,
+        80.0,
+        109.0
+      ]
+    }
+  },
+  "shareholding": {
+    "headers": [
+      "Dec 2023",
+      "Mar 2024",
+      "Jun 2024",
+      "Sep 2024",
+      "Dec 2024",
+      "Mar 2025",
+      "Jun 2025",
+      "Sep 2025",
+      "Dec 2025",
+      "Mar 2026",
+      "Jun 2026",
+      "Sep 2026"
+    ],
+    "data": {
+      "Promoters": [
+        62.4,
+        62.4,
+        62.4,
+        62.4,
+        62.4,
+        62.4,
+        62.4,
+        62.4,
+        62.4,
+        62.4,
+        62.4,
+        62.4
+      ],
+      "FIIs": [
+        7.34,
+        8.08,
+        7.78,
+        7.54,
+        7.45,
+        7.37,
+        7.28,
+        7.27,
+        7.19,
+        4.86,
+        3.91,
+        3.47
+      ],
+      "DIIs": [
+        11.98,
+        12.72,
+        13.74,
+        13.92,
+        13.73,
+        13.89,
+        14.16,
+        14.18,
+        14.02,
+        14.86,
+        14.86,
+        14.56
+      ],
+      "Public": [
+        18.28,
+        16.79,
+        16.06,
+        16.14,
+        16.43,
+        16.35,
+        16.17,
+        16.16,
+        16.39,
+        17.88,
+        18.85,
+        19.59
+      ],
+      "No. of Shareholders": [
+        1928851.0,
+        1910307.0,
+        1928716.0,
+        1924346.0,
+        1959521.0,
+        1994642.0,
+        1958669.0,
+        1925770.0,
+        1902499.0,
+        1932716.0,
+        1945653.0,
+        1943220.0
+      ]
+    }
+  },
+  "derived_metrics": {
+    "market_cap_cr": 36616.0,
+    "current_price": 458.0,
+    "pe": 26.6,
+    "roce_pct": 46.1,
+    "roe_pct": 34.7,
+    "cfo_to_pat_3y": 0.74,
+    "cfo_to_ebitda_3y": 0.61,
+    "debt_to_equity": 0.02,
+    "qoq_opm_delta_bps": 300.0,
+    "latest_qtr_yoy_opm_bps": -400.0,
+    "latest_qtr_yoy_sales_pct": 16.32,
+    "latest_qtr_yoy_pat_pct": -22.81,
+    "promoter_pledge_pct": 0.0,
+    "promoter_qoq_change_pct": 0.0,
+    "is_financial_sector": false
+  }
+}

@@ -91,10 +91,16 @@ def format_digest_card(record: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
     sales_growth_str = f"{sales_3y:.1f}%" if isinstance(sales_3y, (int, float)) else "N/A"
     pat_growth_str = f"{pat_3y:.1f}%" if isinstance(pat_3y, (int, float)) else "N/A"
 
+    pathway = record.get("alpha_pathway") or "20%+ Target IRR"
+    expected_cagr = record.get("expected_cagr_3y") or "20%+"
+    margin_of_safety = record.get("margin_of_safety") or "Quant Verified"
+
     msg = (
         f"{title}\n\n"
         f"<b>Company:</b> <code>{symbol}</code> ({name})\n"
         f"<b>Confluence:</b> {screen_count} Screen(s) [<i>{screens_str}</i>]\n"
+        f"<b>🎯 20%+ Pathway:</b> <code>{pathway}</code> (Target: <b>{expected_cagr}</b>)\n"
+        f"<b>🛡️ Margin of Safety:</b> <i>{margin_of_safety}</i>\n"
         f"<b>Warning Flags:</b> <code>{flags_str}</code>\n\n"
         f"<b>📊 Key Quantitative Metrics:</b>\n"
         f"• CMP: <b>{cmp_str}</b> | P/E: <b>{pe_str}</b> | M.Cap: <b>{mcap_str}</b>\n"

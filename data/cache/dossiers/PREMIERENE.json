@@ -1,0 +1,691 @@
+{
+  "symbol": "PREMIERENE",
+  "name": "Premier Energies Ltd",
+  "about": "Incorporated in April 1995, Premier Energies Limited specializes in manufacturing integrated solar cells and solar panels. Its product portfolio includes solar cells, solar modules, monofacial and bifacial modules, as well as EPC and O&M solutions.[1]",
+  "is_consolidated": true,
+  "sector": "Industrials",
+  "industry": "Other Electrical Equipment",
+  "top_ratios": {
+    "Market Cap": 40670.0,
+    "Current Price": 896.0,
+    "High / Low": 1134.0,
+    "Stock P/E": 23.0,
+    "Book Value": 114.0,
+    "Dividend Yield": 0.11,
+    "ROCE": 32.7,
+    "ROE": 41.0,
+    "Face Value": 1.0
+  },
+  "pros": [
+    "Company is expected to give good quarter",
+    "Company has delivered good profit growth of 131% CAGR over last 5 years",
+    "Company has a good return on equity (ROE) track record: 3 Years ROE 44.8%"
+  ],
+  "cons": [
+    "Stock is trading at 7.87 times its book value",
+    "Company might be capitalizing the interest cost"
+  ],
+  "compounded_growth": {
+    "Compounded Sales Growth": {
+      "10 Years": "%",
+      "5 Years": "62%",
+      "3 Years": "76%",
+      "TTM": "32%"
+    },
+    "Compounded Profit Growth": {
+      "10 Years": "%",
+      "5 Years": "131%",
+      "3 Years": "365%",
+      "TTM": "48%"
+    },
+    "Stock Price CAGR": {
+      "10 Years": "%",
+      "5 Years": "%",
+      "3 Years": "%",
+      "1 Year": "-10%"
+    },
+    "Return on Equity": {
+      "10 Years": "%",
+      "5 Years": "40%",
+      "3 Years": "45%",
+      "Last Year": "41%"
+    }
+  },
+  "quarters": {
+    "headers": [
+      "Sep 2023",
+      "Dec 2023",
+      "Mar 2024",
+      "Jun 2024",
+      "Sep 2024",
+      "Dec 2024",
+      "Mar 2025",
+      "Jun 2025",
+      "Sep 2025",
+      "Dec 2025",
+      "Mar 2026",
+      "Jun 2026",
+      "Sep 2026"
+    ],
+    "data": {
+      "Sales": [
+        694.0,
+        712.0,
+        1127.0,
+        1657.0,
+        1527.0,
+        1713.0,
+        1621.0,
+        1821.0,
+        1837.0,
+        1936.0,
+        2230.0,
+        2463.0,
+        2632.0
+      ],
+      "YoY Sales growth": [
+        null,
+        null,
+        null,
+        171.0,
+        120.0,
+        140.0,
+        44.0,
+        10.0,
+        20.0,
+        13.0,
+        38.0,
+        35.0,
+        43.0
+      ],
+      "Expenses": [
+        595.0,
+        589.0,
+        942.0,
+        1299.0,
+        1147.0,
+        1200.0,
+        1092.0,
+        1272.0,
+        1276.0,
+        1343.0,
+        1555.0,
+        1748.0,
+        1896.0
+      ],
+      "Operating Profit": [
+        99.0,
+        123.0,
+        184.0,
+        358.0,
+        381.0,
+        514.0,
+        528.0,
+        548.0,
+        561.0,
+        593.0,
+        675.0,
+        714.0,
+        736.0
+      ],
+      "OPM %": [
+        14.0,
+        17.0,
+        16.0,
+        22.0,
+        25.0,
+        30.0,
+        33.0,
+        30.0,
+        31.0,
+        31.0,
+        30.0,
+        29.0,
+        28.0
+      ],
+      "Other Income": [
+        8.0,
+        2.0,
+        12.0,
+        12.0,
+        26.0,
+        36.0,
+        59.0,
+        49.0,
+        84.0,
+        30.0,
+        44.0,
+        46.0,
+        24.0
+      ],
+      "Interest": [
+        21.0,
+        37.0,
+        45.0,
+        45.0,
+        42.0,
+        47.0,
+        43.0,
+        37.0,
+        32.0,
+        47.0,
+        41.0,
+        44.0,
+        42.0
+      ],
+      "Depreciation": [
+        16.0,
+        28.0,
+        37.0,
+        79.0,
+        90.0,
+        152.0,
+        177.0,
+        158.0,
+        146.0,
+        70.0,
+        79.0,
+        96.0,
+        117.0
+      ],
+      "Profit before tax": [
+        71.0,
+        61.0,
+        115.0,
+        246.0,
+        275.0,
+        351.0,
+        368.0,
+        403.0,
+        467.0,
+        505.0,
+        598.0,
+        620.0,
+        601.0
+      ],
+      "Tax %": [
+        25.0,
+        29.0,
+        9.0,
+        19.0,
+        25.0,
+        27.0,
+        25.0,
+        24.0,
+        24.0,
+        22.0,
+        24.0,
+        24.0,
+        23.0
+      ],
+      "Net Profit": [
+        53.0,
+        43.0,
+        104.0,
+        198.0,
+        206.0,
+        255.0,
+        278.0,
+        308.0,
+        353.0,
+        392.0,
+        457.0,
+        472.0,
+        462.0
+      ],
+      "EPS in Rs": [
+        1.58,
+        1.29,
+        3.11,
+        5.93,
+        4.57,
+        5.66,
+        6.16,
+        6.83,
+        7.8,
+        8.65,
+        10.08,
+        10.2,
+        10.09
+      ],
+      "Raw PDF": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "profit_loss": {
+    "headers": [
+      "Mar 2020",
+      "Mar 2021",
+      "Mar 2022",
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026",
+      "TTM"
+    ],
+    "data": {
+      "Sales": [
+        947.0,
+        701.0,
+        743.0,
+        1429.0,
+        3144.0,
+        6519.0,
+        7824.0,
+        9261.0
+      ],
+      "Sales growth": [
+        null,
+        -26.0,
+        6.0,
+        92.0,
+        120.0,
+        107.0,
+        20.0,
+        32.0
+      ],
+      "Expenses": [
+        853.0,
+        648.0,
+        713.0,
+        1350.0,
+        2666.0,
+        4738.0,
+        5447.0,
+        6543.0
+      ],
+      "Operating Profit": [
+        94.0,
+        54.0,
+        30.0,
+        78.0,
+        478.0,
+        1781.0,
+        2378.0,
+        2718.0
+      ],
+      "OPM %": [
+        10.0,
+        8.0,
+        4.0,
+        5.0,
+        15.0,
+        27.0,
+        30.0,
+        29.0
+      ],
+      "Other Income": [
+        19.0,
+        35.0,
+        25.0,
+        36.0,
+        29.0,
+        134.0,
+        206.0,
+        143.0
+      ],
+      "Interest": [
+        35.0,
+        22.0,
+        43.0,
+        69.0,
+        121.0,
+        177.0,
+        158.0,
+        175.0
+      ],
+      "Depreciation": [
+        17.0,
+        12.0,
+        28.0,
+        53.0,
+        96.0,
+        498.0,
+        452.0,
+        362.0
+      ],
+      "Profit before tax": [
+        61.0,
+        56.0,
+        -16.0,
+        -8.0,
+        289.0,
+        1240.0,
+        1973.0,
+        2325.0
+      ],
+      "Tax %": [
+        26.0,
+        54.0,
+        -8.0,
+        72.0,
+        20.0,
+        24.0,
+        23.0,
+        null
+      ],
+      "Net Profit": [
+        45.0,
+        26.0,
+        -14.0,
+        -13.0,
+        231.0,
+        937.0,
+        1510.0,
+        1783.0
+      ],
+      "EPS in Rs": [
+        1.18,
+        0.74,
+        -0.43,
+        -0.38,
+        6.92,
+        20.79,
+        33.33,
+        39.02
+      ],
+      "Dividend Payout %": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        5.0,
+        3.0,
+        null
+      ]
+    }
+  },
+  "balance_sheet": {
+    "headers": [
+      "Mar 2020",
+      "Mar 2021",
+      "Mar 2022",
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026",
+      "Sep 2026"
+    ],
+    "data": {
+      "Equity Capital": [
+        25.0,
+        25.0,
+        26.0,
+        26.0,
+        26.0,
+        45.0,
+        45.0,
+        45.0
+      ],
+      "Reserves": [
+        206.0,
+        197.0,
+        368.0,
+        385.0,
+        620.0,
+        2777.0,
+        4262.0,
+        5124.0
+      ],
+      "Borrowings": [
+        256.0,
+        347.0,
+        455.0,
+        765.0,
+        1401.0,
+        1954.0,
+        3707.0,
+        3732.0
+      ],
+      "Other Liabilities": [
+        342.0,
+        406.0,
+        491.0,
+        934.0,
+        1489.0,
+        2065.0,
+        2825.0,
+        3832.0
+      ],
+      "Total Liabilities": [
+        828.0,
+        975.0,
+        1340.0,
+        2110.0,
+        3537.0,
+        6841.0,
+        10840.0,
+        12733.0
+      ],
+      "Fixed Assets": [
+        263.0,
+        425.0,
+        479.0,
+        592.0,
+        1203.0,
+        978.0,
+        1747.0,
+        2762.0
+      ],
+      "CWIP": [
+        21.0,
+        0.0,
+        114.0,
+        349.0,
+        20.0,
+        242.0,
+        2144.0,
+        2990.0
+      ],
+      "Investments": [
+        6.0,
+        9.0,
+        55.0,
+        59.0,
+        9.0,
+        845.0,
+        670.0,
+        481.0
+      ],
+      "Other Assets": [
+        538.0,
+        541.0,
+        693.0,
+        1110.0,
+        2305.0,
+        4775.0,
+        6280.0,
+        6500.0
+      ],
+      "Total Assets": [
+        828.0,
+        975.0,
+        1340.0,
+        2110.0,
+        3537.0,
+        6841.0,
+        10840.0,
+        12733.0
+      ]
+    }
+  },
+  "cash_flows": {
+    "headers": [
+      "Mar 2020",
+      "Mar 2021",
+      "Mar 2022",
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026"
+    ],
+    "data": {
+      "Cash from Operating Activity": [
+        -66.0,
+        237.0,
+        5.0,
+        37.0,
+        90.0,
+        1348.0,
+        1261.0
+      ],
+      "Cash from Investing Activity": [
+        -56.0,
+        -353.0,
+        -218.0,
+        -304.0,
+        -447.0,
+        -2410.0,
+        -2156.0
+      ],
+      "Cash from Financing Activity": [
+        134.0,
+        109.0,
+        279.0,
+        252.0,
+        549.0,
+        1608.0,
+        1559.0
+      ],
+      "Net Cash Flow": [
+        13.0,
+        -7.0,
+        66.0,
+        -16.0,
+        192.0,
+        546.0,
+        664.0
+      ],
+      "Free Cash Flow": [
+        -90.0,
+        -83.0,
+        -178.0,
+        -237.0,
+        -359.0,
+        728.0,
+        -1736.0
+      ],
+      "CFO/EBITDAShare of operating profit converting into cash: CFO (before tax) / Operating Profit": [
+        -50.0,
+        467.0,
+        57.0,
+        60.0,
+        24.0,
+        98.0,
+        70.0
+      ]
+    }
+  },
+  "shareholding": {
+    "headers": [
+      "Sep 2024",
+      "Dec 2024",
+      "Mar 2025",
+      "Jun 2025",
+      "Sep 2025",
+      "Dec 2025",
+      "Mar 2026",
+      "Jun 2026",
+      "Sep 2026"
+    ],
+    "data": {
+      "Promoters": [
+        64.25,
+        64.25,
+        64.25,
+        64.25,
+        63.94,
+        63.94,
+        63.94,
+        58.48,
+        58.48
+      ],
+      "FIIs": [
+        3.08,
+        2.31,
+        2.95,
+        4.38,
+        4.23,
+        4.48,
+        5.72,
+        7.92,
+        7.12
+      ],
+      "DIIs": [
+        6.71,
+        7.95,
+        8.66,
+        12.96,
+        13.26,
+        12.72,
+        13.69,
+        17.97,
+        18.88
+      ],
+      "Public": [
+        25.07,
+        24.62,
+        23.42,
+        17.7,
+        17.72,
+        18.08,
+        16.28,
+        15.07,
+        14.99
+      ],
+      "Others": [
+        0.87,
+        0.87,
+        0.72,
+        0.7,
+        0.86,
+        0.8,
+        0.37,
+        0.55,
+        0.53
+      ],
+      "No. of Shareholders": [
+        415978.0,
+        374313.0,
+        388511.0,
+        381623.0,
+        376130.0,
+        371229.0,
+        364141.0,
+        338684.0,
+        335145.0
+      ]
+    }
+  },
+  "derived_metrics": {
+    "market_cap_cr": 40670.0,
+    "current_price": 896.0,
+    "pe": 23.0,
+    "roce_pct": 32.7,
+    "roe_pct": 41.0,
+    "cfo_to_pat_3y": 0.64,
+    "cfo_to_ebitda_3y": 0.39,
+    "debt_to_equity": 0.72,
+    "qoq_opm_delta_bps": -100.0,
+    "latest_qtr_yoy_opm_bps": -300.0,
+    "latest_qtr_yoy_sales_pct": 43.28,
+    "latest_qtr_yoy_pat_pct": 30.88,
+    "promoter_pledge_pct": 0.0,
+    "promoter_qoq_change_pct": 0.0,
+    "is_financial_sector": false
+  }
+}

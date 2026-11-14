@@ -25,6 +25,9 @@ DEFAULT_HEADERS = {
 
 SESSION_CACHE_PATH = BASE_DIR / "data" / ".screener_session.json"
 ENV_PATH = BASE_DIR / ".env"
+DOSSIER_CACHE_DIR = BASE_DIR / "data" / "cache" / "dossiers"
+SCREEN_CACHE_DIR = BASE_DIR / "data" / "cache" / "screens"
+DEFAULT_CACHE_TTL_HOURS = 6.0
 
 
 def clean_numeric(val: Any) -> Optional[float]:
@@ -160,8 +163,11 @@ class CustomScreenerParser:
     - Company Financial Dossier Fetcher (/company/<SYMBOL>/consolidated/ with fallback)
     - Derived Financial Indicators (CFO/PAT, Debt/Equity, QoQ/YoY margins, promoter changes)
     """
-    def __init__(self, request_delay_sec: float = 2.0):
+    def __init__(self, request_delay_sec: float = 2.0, cache_ttl_hours: float = DEFAULT_CACHE_TTL_HOURS):
         self.request_delay_sec = max(request_delay_sec, 1.5)
+        self.cache_ttl_hours = cache_ttl_hours
+        DOSSIER_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        SCREEN_CACHE_DIR.mkdir(parents=True, exist_ok=True)
         self.auth = ScreenerAuth()
         self.session = requests.Session()
         self.session.headers.update(DEFAULT_HEADERS)
@@ -204,13 +210,29 @@ class CustomScreenerParser:
         logger.error(f"Failed to fetch {url} after {max_retries} attempts.")
         return None
 
-    def parse_saved_screen(self, screen_cfg: Dict[str, Any], max_pages: int = 10) -> List[Dict[str, Any]]:
+    def parse_saved_screen(self, screen_cfg: Dict[str, Any], max_pages: int = 10, use_cache: bool = True) -> List[Dict[str, Any]]:
         """
         Paginates through a saved screen /screens/<id>/<slug>/?page=1..N.
         Parses the <table class="data-table">, extracts symbols and visible metrics.
+        Loads from 6-hour cache if available to save network calls and time.
         """
         screen_url = screen_cfg.get("url", "").strip()
         screen_name = screen_cfg.get("name", "Unknown Screen")
+        screen_id = str(screen_cfg.get("id", "")).strip()
+
+        # Check 6-Hour Screen Cache
+        cache_file = SCREEN_CACHE_DIR / f"{screen_id}.json" if screen_id else None
+        if use_cache and cache_file and cache_file.exists():
+            try:
+                age_seconds = time.time() - cache_file.stat().st_mtime
+                if age_seconds < (self.cache_ttl_hours * 3600):
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        cached_data = json.load(f)
+                    logger.info(f"Loaded screen '{screen_name}' from 6H cache ({len(cached_data)} stocks, {age_seconds/3600:.1f}h old). 0 network calls.")
+                    return cached_data
+            except Exception as e:
+                logger.warning(f"Error reading screen cache for {screen_name}: {e}")
+
         if not screen_url:
             logger.warning(f"No URL specified for screen: {screen_name}")
             return []
@@ -312,17 +334,40 @@ class CustomScreenerParser:
 
             page += 1
 
+        if cache_file and all_screen_stocks:
+            try:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump(all_screen_stocks, f, indent=2, ensure_ascii=False)
+            except Exception as e:
+                logger.warning(f"Error caching screen '{screen_name}': {e}")
+
         return all_screen_stocks
 
-    def fetch_company_dossier(self, symbol: str) -> Optional[Dict[str, Any]]:
+    def fetch_company_dossier(self, symbol: str, use_cache: bool = True) -> Optional[Dict[str, Any]]:
         """
         Fetches full financial dossier for a symbol:
-        1. Requests /company/{symbol}/consolidated/ first.
-        2. If top ratios or quarters table is unpopulated, falls back to /company/{symbol}/.
-        3. Parses ratios, 3Y/5Y growth, quarters, P&L, Balance Sheet, Cash Flow, Shareholding.
-        4. Calculates derived ratios (cfo_to_pat_3y, debt_to_equity, QoQ/YoY margins, etc.).
+        1. Checks 6-hour disk cache first.
+        2. Requests /company/{symbol}/consolidated/ first.
+        3. If top ratios or quarters table is unpopulated, falls back to /company/{symbol}/.
+        4. Parses ratios, 3Y/5Y growth, quarters, P&L, Balance Sheet, Cash Flow, Shareholding.
+        5. Calculates derived ratios (cfo_to_pat_3y, debt_to_equity, QoQ/YoY margins, etc.).
+        6. Caches parsed dossier to disk for 6 hours.
         """
         symbol = symbol.strip().upper()
+        cache_file = DOSSIER_CACHE_DIR / f"{symbol}.json"
+
+        # Check 6-Hour Dossier Cache
+        if use_cache and cache_file.exists():
+            try:
+                age_seconds = time.time() - cache_file.stat().st_mtime
+                if age_seconds < (self.cache_ttl_hours * 3600):
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        cached_dossier = json.load(f)
+                    logger.info(f"Loaded {symbol} dossier from 6H cache ({age_seconds/3600:.1f}h old). 0 network calls.")
+                    return cached_dossier
+            except Exception as e:
+                logger.warning(f"Error reading dossier cache for {symbol}: {e}")
+
         consolidated_url = f"https://www.screener.in/company/{symbol}/consolidated/"
         standalone_url = f"https://www.screener.in/company/{symbol}/"
 
@@ -351,7 +396,17 @@ class CustomScreenerParser:
             return None
 
         soup = BeautifulSoup(resp.text, "html.parser")
-        return self._extract_dossier_from_soup(symbol, soup, is_consolidated)
+        dossier = self._extract_dossier_from_soup(symbol, soup, is_consolidated)
+
+        # Cache valid dossier to disk
+        if dossier:
+            try:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump(dossier, f, indent=2, ensure_ascii=False)
+            except Exception as e:
+                logger.warning(f"Error caching dossier for {symbol}: {e}")
+
+        return dossier
 
     def _extract_dossier_from_soup(self, symbol: str, soup: BeautifulSoup, is_consolidated: bool) -> Dict[str, Any]:
         """Extracts and computes all structured tables and ratios from BeautifulSoup page."""
@@ -445,7 +500,8 @@ class CustomScreenerParser:
             cash_flows=cash_flows,
             shareholding=shareholding,
             sector=sector,
-            industry=industry
+            industry=industry,
+            company_name=company_name
         )
 
         return {
@@ -491,7 +547,8 @@ class CustomScreenerParser:
         cash_flows: Dict[str, List[Optional[float]]],
         shareholding: Dict[str, List[Optional[float]]],
         sector: str,
-        industry: str
+        industry: str,
+        company_name: str = ""
     ) -> Dict[str, Any]:
         """Calculates 3Y cash conversion, debt-to-equity, QoQ/YoY margins, and promoter trends."""
         # 1. 3Y CFO to PAT

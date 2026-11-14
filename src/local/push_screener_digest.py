@@ -83,13 +83,13 @@ def format_digest_card(record: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
     sales_3y = metrics.get("sales_growth_3y") or metrics.get("latest_qtr_yoy_sales_pct")
     pat_3y = metrics.get("profit_growth_3y") or metrics.get("latest_qtr_yoy_pat_pct")
 
-    cmp_str = f"₹{cmp_val:,.1f}" if cmp_val else "N/A"
-    pe_str = f"{pe_val:.1f}x" if pe_val else "N/A"
-    mcap_str = f"₹{mcap_val:,.0f} Cr" if mcap_val else "N/A"
-    roce_str = f"{roce_val:.1f}%" if roce_val else "N/A"
-    cfo_pat_str = f"{cfo_pat_val:.2f}x" if cfo_pat_val else "N/A"
-    sales_growth_str = f"{sales_3y:.1f}%" if sales_3y else "N/A"
-    pat_growth_str = f"{pat_3y:.1f}%" if pat_3y else "N/A"
+    cmp_str = f"₹{cmp_val:,.1f}" if isinstance(cmp_val, (int, float)) else "N/A"
+    pe_str = f"{pe_val:.1f}x" if isinstance(pe_val, (int, float)) else "N/A"
+    mcap_str = f"₹{mcap_val:,.0f} Cr" if isinstance(mcap_val, (int, float)) else "N/A"
+    roce_str = f"{roce_val:.1f}%" if isinstance(roce_val, (int, float)) else "N/A"
+    cfo_pat_str = f"{cfo_pat_val:.2f}x" if isinstance(cfo_pat_val, (int, float)) else "N/A"
+    sales_growth_str = f"{sales_3y:.1f}%" if isinstance(sales_3y, (int, float)) else "N/A"
+    pat_growth_str = f"{pat_3y:.1f}%" if isinstance(pat_3y, (int, float)) else "N/A"
 
     msg = (
         f"{title}\n\n"
@@ -140,10 +140,19 @@ def push_screener_digest(date_str: Optional[str] = None) -> int:
         return 0
 
     dispatcher = TelegramDispatcher()
-    approved_verdicts = {"STRONG_BUY_WATCH", "ACCUMULATE_ON_DIP"}
-    approved_records = [r for r in records if r.get("verdict", "").upper() in approved_verdicts]
+    
+    # Deduplicate by symbol keeping the latest record
+    latest_by_symbol = {}
+    for r in records:
+        sym = r.get("symbol", "").upper()
+        if sym:
+            latest_by_symbol[sym] = r
+    unique_records = list(latest_by_symbol.values())
 
-    logger.info(f"Total evaluated records: {len(records)} | Approved for Telegram dispatch: {len(approved_records)}")
+    approved_verdicts = {"STRONG_BUY_WATCH", "ACCUMULATE_ON_DIP"}
+    approved_records = [r for r in unique_records if r.get("verdict", "").upper() in approved_verdicts]
+
+    logger.info(f"Total evaluated records: {len(unique_records)} (raw: {len(records)}) | Approved for Telegram dispatch: {len(approved_records)}")
 
     dispatched_count = 0
     for r in approved_records:
@@ -157,11 +166,11 @@ def push_screener_digest(date_str: Optional[str] = None) -> int:
     summary_text = (
         f"📋 <b>AlphaMinter Screener Audit Summary</b>\n\n"
         f"• Date: <code>{datetime.now().strftime('%Y-%m-%d')}</code>\n"
-        f"• Total Evaluated by AI: <b>{len(records)}</b>\n"
-        f"• Strong Buy Watch: <b>{sum(1 for r in records if r.get('verdict') == 'STRONG_BUY_WATCH')}</b>\n"
-        f"• Accumulate on Dip: <b>{sum(1 for r in records if r.get('verdict') == 'ACCUMULATE_ON_DIP')}</b>\n"
-        f"• Hold Watch: <b>{sum(1 for r in records if r.get('verdict') == 'HOLD_WATCH')}</b>\n"
-        f"• Rejected: <b>{sum(1 for r in records if r.get('verdict') == 'REJECT')}</b>\n\n"
+        f"• Total Evaluated by AI: <b>{len(unique_records)}</b>\n"
+        f"• Strong Buy Watch: <b>{sum(1 for r in unique_records if r.get('verdict') == 'STRONG_BUY_WATCH')}</b>\n"
+        f"• Accumulate on Dip: <b>{sum(1 for r in unique_records if r.get('verdict') == 'ACCUMULATE_ON_DIP')}</b>\n"
+        f"• Hold Watch: <b>{sum(1 for r in unique_records if r.get('verdict') == 'HOLD_WATCH')}</b>\n"
+        f"• Rejected: <b>{sum(1 for r in unique_records if r.get('verdict') == 'REJECT')}</b>\n\n"
         f"<i>Tap [🚫 Permaban] on any stock above to exclude it from future scans.</i>"
     )
     dispatcher.send_message(summary_text)

@@ -67,6 +67,10 @@ def append_audit_logs(record: Dict[str, Any]):
     with open(jsonl_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
+    metrics_data = record.get("metrics", {})
+    mcap_val = metrics_data.get("market_cap_cr")
+    mcap_formatted = f"₹{mcap_val:,.0f} Cr" if isinstance(mcap_val, (int, float)) else "N/A"
+
     # 2. Markdown append
     md_entry = (
         f"### [{record.get('verdict')}] {record.get('symbol')} - {record.get('name')}\n"
@@ -74,11 +78,11 @@ def append_audit_logs(record: Dict[str, Any]):
         f"- **Conviction Score**: {record.get('conviction_score', 8)}/10\n"
         f"- **Matched Screens**: {', '.join(record.get('matched_screens', []))} (Hits: {record.get('screen_count', 1)})\n"
         f"- **Warning Flags**: {', '.join(record.get('negative_flags', [])) or 'None (Clean)'} - {record.get('flag_assessment', 'Quant verified')}\n"
-        f"- **Key Metrics**: CMP: ₹{record.get('metrics', {}).get('current_price', 'N/A')} | "
-        f"P/E: {record.get('metrics', {}).get('pe', 'N/A')} | "
-        f"M.Cap: ₹{record.get('metrics', {}).get('market_cap_cr', 'N/A'):,.0f} Cr | "
-        f"ROCE: {record.get('metrics', {}).get('roce_pct', 'N/A')}% | "
-        f"3Y CFO/PAT: {record.get('metrics', {}).get('cfo_to_pat_3y', 'N/A')}x\n"
+        f"- **Key Metrics**: CMP: ₹{metrics_data.get('current_price', 'N/A')} | "
+        f"P/E: {metrics_data.get('pe', 'N/A')} | "
+        f"M.Cap: {mcap_formatted} | "
+        f"ROCE: {metrics_data.get('roce_pct', 'N/A')}% | "
+        f"3Y CFO/PAT: {metrics_data.get('cfo_to_pat_3y', 'N/A')}x\n"
         f"- **Moat & Growth Drivers**: {record.get('thesis', '')}\n"
         f"- **FY27/FY28 Management Guidance**: {record.get('guidance_summary', '')}\n"
         f"- **Risks & Red Flags**: {record.get('risks_summary', 'No material red flags identified.')}\n"

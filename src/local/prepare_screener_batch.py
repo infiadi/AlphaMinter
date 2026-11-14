@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import json
 import logging
 from datetime import datetime, timedelta
@@ -83,6 +84,75 @@ def is_on_review_cooldown(
     return False, "Cooldown expired"
 
 
+def extract_screen_metric(screen_metrics: Dict[str, Any], keywords: List[str]) -> Optional[float]:
+    """Extracts a numeric metric from screen table columns by fuzzy matching header keywords."""
+    for k, v in screen_metrics.items():
+        k_clean = re.sub(r"[^a-zA-Z0-9%]", "", k).lower()
+        for kw in keywords:
+            kw_clean = re.sub(r"[^a-zA-Z0-9%]", "", kw).lower()
+            if kw_clean in k_clean and isinstance(v, (int, float)):
+                return float(v)
+    return None
+
+
+def evaluate_screen_level_flags(
+    cand: Dict[str, Any],
+    global_filters: Dict[str, Any],
+    screen_overrides_list: List[Dict[str, Any]]
+) -> Tuple[List[str], Dict[str, str]]:
+    """
+    Evaluates visible screen columns (Market Cap, ROCE, Qtr Profit Var, Sales Growth)
+    directly at the screen level with ZERO extra network requests.
+    """
+    flags: List[str] = []
+    reasons: Dict[str, str] = {}
+    m = cand.get("screen_metrics", {})
+    if not m:
+        return flags, reasons
+
+    exempt_flags = set()
+    for ov in screen_overrides_list:
+        for ex in ov.get("exempt_flags", []):
+            exempt_flags.add(ex)
+
+    # 1. Market Cap
+    global_min_mcap = float(global_filters.get("min_market_cap_cr", 1000))
+    screen_mcaps = [ov.get("min_market_cap_cr") for ov in screen_overrides_list if ov.get("min_market_cap_cr") is not None]
+    effective_min_mcap = max(screen_mcaps) if screen_mcaps else global_min_mcap
+    mcap = extract_screen_metric(m, ["mar cap", "market cap"])
+    if mcap is not None and mcap < effective_min_mcap:
+        flags.append("NEG_LOW_MCAP")
+        reasons["NEG_LOW_MCAP"] = f"Screen M.Cap ₹{mcap:.0f} Cr < ₹{effective_min_mcap:.0f} Cr"
+
+    # 2. ROCE
+    if "NEG_ROCE" not in exempt_flags:
+        global_min_roce = float(global_filters.get("min_roce_pct", 10.0))
+        screen_roces = [ov.get("min_roce_pct") for ov in screen_overrides_list if ov.get("min_roce_pct") is not None]
+        effective_min_roce = max(screen_roces) if screen_roces else global_min_roce
+        roce = extract_screen_metric(m, ["roce"])
+        if roce is not None and roce < effective_min_roce:
+            flags.append("NEG_ROCE")
+            reasons["NEG_ROCE"] = f"Screen ROCE {roce}% < {effective_min_roce}%"
+
+    # 3. Latest Qtr YoY PAT Growth
+    if "NEG_LATEST_QTR_PAT" not in exempt_flags:
+        global_min_pat = float(global_filters.get("min_latest_qtr_yoy_pat_pct", -15.0))
+        pat_growth = extract_screen_metric(m, ["qtr profit var", "profit var%"])
+        if pat_growth is not None and pat_growth < global_min_pat:
+            flags.append("NEG_LATEST_QTR_PAT")
+            reasons["NEG_LATEST_QTR_PAT"] = f"Screen Qtr PAT growth {pat_growth}% < {global_min_pat}%"
+
+    # 4. Latest Qtr YoY Sales Growth
+    if "NEG_LATEST_QTR_SALES" not in exempt_flags:
+        global_min_sales = float(global_filters.get("min_latest_qtr_yoy_sales_pct", -5.0))
+        sales_growth = extract_screen_metric(m, ["sales growth"])
+        if sales_growth is not None and sales_growth < global_min_sales:
+            flags.append("NEG_LATEST_QTR_SALES")
+            reasons["NEG_LATEST_QTR_SALES"] = f"Screen Sales growth {sales_growth}% < {global_min_sales}%"
+
+    return flags, reasons
+
+
 def evaluate_negative_flags(
     stock_candidate: Dict[str, Any],
     global_filters: Dict[str, Any],
@@ -111,28 +181,36 @@ def evaluate_negative_flags(
         for ex in ov.get("exempt_flags", []):
             exempt_flags.add(ex)
 
-    # 1. NEG_ROCE
+    is_fin = metrics.get("is_financial_sector", False)
+
+    # 1. NEG_ROCE (Evaluated via ROE for Banks/NBFCs)
     if "NEG_ROCE" not in exempt_flags:
         global_min_roce = float(global_filters.get("min_roce_pct", 10.0))
-        # Use strictest threshold among matched screens
         screen_roces = [ov.get("min_roce_pct") for ov in screen_overrides_list if ov.get("min_roce_pct") is not None]
         effective_min_roce = max(screen_roces) if screen_roces else global_min_roce
 
         roce = metrics.get("roce_pct") or top_ratios.get("ROCE")
-        if roce is not None and roce < effective_min_roce:
+        if is_fin:
+            # Banks operate with high leverage, so ROE is the primary capital efficiency metric
+            roe = metrics.get("roe_pct") or top_ratios.get("ROE")
+            if roe is not None and roe < 12.0:
+                flags.append("NEG_ROCE")
+                reasons["NEG_ROCE"] = f"Financial institution ROE {roe}% < 12.0%"
+        elif roce is not None and roce < effective_min_roce:
             flags.append("NEG_ROCE")
             reasons["NEG_ROCE"] = f"ROCE {roce}% < minimum required {effective_min_roce}%"
 
-    # 2. NEG_CASH_CONVERSION (CFO to PAT 3Y)
+    # 2. NEG_CASH_CONVERSION (CFO to PAT 3Y) - Skipped for banks & NBFCs
     if "NEG_CASH_CONVERSION" not in exempt_flags:
-        global_min_cfo = float(global_filters.get("min_cfo_to_pat_3y", 0.60))
-        screen_cfos = [ov.get("min_cfo_to_pat_3y") for ov in screen_overrides_list if ov.get("min_cfo_to_pat_3y") is not None]
-        effective_min_cfo = max(screen_cfos) if screen_cfos else global_min_cfo
+        if not is_fin:
+            global_min_cfo = float(global_filters.get("min_cfo_to_pat_3y", 0.60))
+            screen_cfos = [ov.get("min_cfo_to_pat_3y") for ov in screen_overrides_list if ov.get("min_cfo_to_pat_3y") is not None]
+            effective_min_cfo = max(screen_cfos) if screen_cfos else global_min_cfo
 
-        cfo_pat = metrics.get("cfo_to_pat_3y")
-        if cfo_pat is not None and cfo_pat < effective_min_cfo:
-            flags.append("NEG_CASH_CONVERSION")
-            reasons["NEG_CASH_CONVERSION"] = f"3Y CFO/PAT {cfo_pat:.2f} < threshold {effective_min_cfo:.2f}"
+            cfo_pat = metrics.get("cfo_to_pat_3y")
+            if cfo_pat is not None and cfo_pat < effective_min_cfo:
+                flags.append("NEG_CASH_CONVERSION")
+                reasons["NEG_CASH_CONVERSION"] = f"3Y CFO/PAT {cfo_pat:.2f} < threshold {effective_min_cfo:.2f}"
 
     # 3. NEG_HIGH_DEBT (Skipped if bank/finance/nbfc)
     if "NEG_HIGH_DEBT" not in exempt_flags:
@@ -264,6 +342,11 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
 
     total_unique_screen_hits = len(merged_candidates)
     logger.info(f"Total unique tickers discovered across {len(screens)} screen(s): {total_unique_screen_hits}")
+    if total_unique_screen_hits == 0:
+        logger.warning(
+            "⚠️ 0 screen hits discovered! If this is unexpected, verify internet connectivity to "
+            "https://www.screener.in and ensure that unsandboxed network permission ('Always Allow') is granted."
+        )
 
     # Step B: Filter out Non-Equities, D1 Silenced, and Cooldown
     surviving_initial_gate: Dict[str, Dict[str, Any]] = {}
@@ -301,22 +384,64 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         f"45D Cooldown={excluded_stats['cooldown']}"
     )
 
-    # Prioritize highest confluence candidates (screen_count descending)
-    prioritized_candidates = sorted(
-        surviving_initial_gate.items(),
-        key=lambda item: item[1].get("screen_count", 1),
-        reverse=True
-    )
-    if limit and limit > 0:
-        logger.info(f"Applying batch limit: processing top {limit} prioritized candidates out of {len(prioritized_candidates)}")
-        prioritized_candidates = prioritized_candidates[:limit]
-
-    # Step C: Fetch Full Financial Dossiers & Score Negative Flags
+    # Step C: PASS 1 - Instant Screen-Level Quant Gate (0 network requests)
     qualified_candidates: List[Dict[str, Any]] = []
     rejected_candidates: List[Dict[str, Any]] = []
+    screen_passed_candidates: List[Dict[str, Any]] = []
 
-    for idx, (sym, cand) in enumerate(prioritized_candidates, 1):
-        logger.info(f"[{idx}/{len(prioritized_candidates)}] Fetching full dossier for {sym} (Screen Hits: {cand['screen_count']})...")
+    for sym, cand in surviving_initial_gate.items():
+        s_flags, s_reasons = evaluate_screen_level_flags(
+            cand=cand,
+            global_filters=global_filters,
+            screen_overrides_list=cand.get("conditional_overrides", [])
+        )
+        if len(s_flags) > max_neg_flags:
+            logger.info(
+                f"SCREEN-LEVEL REJECTION {sym} ({cand['name']}): {len(s_flags)} negative flags > allowed {max_neg_flags}. "
+                f"Flags: {s_flags}. Dropped upfront without fetching full dossier."
+            )
+            rejected_candidates.append({
+                "symbol": sym,
+                "name": cand["name"],
+                "screen_count": cand["screen_count"],
+                "matched_screens": cand["matched_screens"],
+                "negative_flags": s_flags,
+                "reasons": s_reasons,
+                "screen_metrics": cand.get("screen_metrics", {})
+            })
+        else:
+            cand["screen_flags"] = s_flags
+            cand["screen_flag_reasons"] = s_reasons
+            screen_passed_candidates.append(cand)
+
+    logger.info(
+        f"Screen-Level Pass Results: Qualified for Deep Analysis={len(screen_passed_candidates)} | "
+        f"Instant Screen Rejections={len(rejected_candidates)}"
+    )
+
+    # Step D: Prioritize Confluence & High ROCE for Deep Dossier Fetching
+    screen_passed_candidates.sort(
+        key=lambda c: (
+            c.get("screen_count", 1),
+            extract_screen_metric(c.get("screen_metrics", {}), ["roce"]) or 0.0
+        ),
+        reverse=True
+    )
+
+    max_dossiers = limit if (limit and limit > 0) else int(settings.get("max_dossiers_to_fetch", 25))
+    if len(screen_passed_candidates) > max_dossiers:
+        logger.info(
+            f"Prioritizing top {max_dossiers} highest-confluence/quality candidates for deep dossier analysis "
+            f"(out of {len(screen_passed_candidates)} screen survivors)."
+        )
+        candidates_to_fetch = screen_passed_candidates[:max_dossiers]
+    else:
+        candidates_to_fetch = screen_passed_candidates
+
+    # Step E: PASS 2 - Deep Financial Dossier Fetch & Multi-Year Indicator Audit
+    for idx, cand in enumerate(candidates_to_fetch, 1):
+        sym = cand["symbol"]
+        logger.info(f"[{idx}/{len(candidates_to_fetch)}] Fetching full dossier for {sym} (Screen Hits: {cand['screen_count']})...")
         dossier = parser.fetch_company_dossier(sym)
         if not dossier:
             logger.warning(f"Skipping {sym}: Unable to retrieve company dossier.")
@@ -324,7 +449,7 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
 
         cand["dossier"] = dossier
 
-        # Evaluate negative flags
+        # Evaluate deep negative flags (CFO/PAT, Debt/Equity, QoQ/YoY margins, promoter changes)
         flags, flag_reasons = evaluate_negative_flags(
             stock_candidate=cand,
             global_filters=global_filters,

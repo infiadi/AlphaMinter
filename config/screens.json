@@ -3,7 +3,8 @@
     "request_delay_sec": 2.0,
     "review_cooldown_days": 45,
     "max_pages_per_screen": 10,
-    "max_negative_flags_allowed": 1
+    "max_negative_flags_allowed": 1,
+    "max_dossiers_to_fetch": 25
   },
   "global_filters": {
     "min_market_cap_cr": 1000,

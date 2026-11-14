@@ -35,8 +35,11 @@ MIN_REACTION_PRICE_PCT = float(os.getenv("MIN_REACTION_PRICE_PCT", "4.0"))
 MIN_REACTION_VOLUME_X = float(os.getenv("MIN_REACTION_VOLUME_X", "3.0"))
 MIN_REACTION_DELIV_PCT = float(os.getenv("MIN_REACTION_DELIV_PCT", "50.0"))
 
-# Buyback Arbitrage Thresholds
-RETAIL_INVESTMENT_LIMIT_SAFE = float(os.getenv("RETAIL_INVESTMENT_LIMIT_SAFE", "195000.0"))  # ₹1.95L buffer
+# Buyback Arbitrage Thresholds (Hardened for SEBI Small Shareholder Cap)
+# SEBI ceiling is <= ₹2 Lakhs on Record Date closing price.
+# Sizing at ₹1.85L leaves a ~8% cushion against pre-record-date rallies.
+RETAIL_INVESTMENT_LIMIT_SAFE = float(os.getenv("RETAIL_INVESTMENT_LIMIT_SAFE", "185000.0"))
+STCG_TAX_RATE = float(os.getenv("STCG_TAX_RATE", "0.20"))  # 20% STCG on Tender Buybacks
 
 # Request Headers
 NSE_HEADERS = {

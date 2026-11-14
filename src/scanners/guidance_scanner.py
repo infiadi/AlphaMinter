@@ -3,10 +3,11 @@ import logging
 import os
 import re
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from datetime import datetime
+from pathlib import Path
 import requests
-from config.settings import BSE_HEADERS, GEMINI_API_KEY, GEMINI_MODEL
+from config.settings import BSE_HEADERS, GEMINI_API_KEY, GEMINI_MODEL, BASE_DIR
 from src.storage.state_store import StateStore
 from src.scanners.equity_filter import EquityFilter
 
@@ -15,10 +16,11 @@ logger = logging.getLogger(__name__)
 class GuidanceScanner:
     """
     Scans corporate disclosures for operating equities (Market Cap >= ₹5,000 Cr).
-    Uses the free Gemini 3.5 Flash Lite API (500 requests/day) with:
-    1. Dynamic fiscal year detection (no hardcoded fixed FY strings).
+    Uses the free Gemini 3.5 Flash Lite API (500 requests/day free tier) with:
+    1. Dynamic fiscal year and quarter detection (zero hardcoded FY strings).
     2. Smart text extraction to keep token payload small and prevent TPM limits.
-    3. Exponential backoff and pacing on API calls to strictly avoid HTTP 429.
+    3. (Symbol, Quarter) deduplication so multiple filings in the same quarter don't alert twice.
+    4. Exponential backoff and pacing on API calls to strictly avoid HTTP 429.
     """
     def __init__(self, state_store: StateStore = None, gemini_api_key: str = GEMINI_API_KEY, model: str = GEMINI_MODEL):
         self.state_store = state_store or StateStore()
@@ -27,12 +29,16 @@ class GuidanceScanner:
         self.model = model
         self.session = requests.Session()
         self.session.headers.update(BSE_HEADERS)
+        self.history = self._load_history()
 
     def is_gemini_configured(self) -> bool:
         return bool(self.api_key and self.api_key != "your_gemini_api_key_here")
 
-    def _get_current_and_next_fy(self) -> (str, str):
-        """Calculates current and next Indian Fiscal Year dynamically based on current date."""
+    def _get_current_and_next_fy(self) -> Tuple[str, str, str]:
+        """
+        Dynamically calculates current and next Indian Fiscal Year and quarter based on current date.
+        Zero hardcoded year values.
+        """
         today = datetime.now()
         # In India, Fiscal Year starts April 1 (month 4)
         if today.month >= 4:
@@ -42,7 +48,37 @@ class GuidanceScanner:
             
         current_fy = f"FY{str(current_fy_end)[-2:]}"
         next_fy = f"FY{str(current_fy_end + 1)[-2:]}"
-        return current_fy, next_fy
+
+        if today.month in [4, 5, 6]:
+            qtr = "Q1"
+        elif today.month in [7, 8, 9]:
+            qtr = "Q2"
+        elif today.month in [10, 11, 12]:
+            qtr = "Q3"
+        else:
+            qtr = "Q4"
+
+        quarter_tag = f"{qtr}{current_fy}"
+        return current_fy, next_fy, quarter_tag
+
+    def _load_history(self) -> Dict[str, str]:
+        path = BASE_DIR / "data" / "guidance_history.json"
+        if path.exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+        return {}
+
+    def _save_history(self):
+        path = BASE_DIR / "data" / "guidance_history.json"
+        try:
+            path.parent.mkdir(exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(self.history, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to persist guidance history: {e}")
 
     def _extract_relevant_guidance_text(self, text: str, max_chars: int = 8000) -> str:
         """
@@ -60,13 +96,13 @@ class GuidanceScanner:
 
     def analyze_guidance_with_gemini(self, symbol: str, raw_text: str) -> Optional[Dict]:
         """
-        Calls Gemini 3.5 Flash Lite with structured schema and dynamic period detection.
+        Calls Gemini 3.5 Flash Lite with structured JSON schema and dynamic period detection.
         """
         if not self.is_gemini_configured():
             logger.warning("GEMINI_API_KEY not configured. Skipping LLM guidance extraction.")
             return None
 
-        current_fy, next_fy = self._get_current_and_next_fy()
+        current_fy, next_fy, quarter_tag = self._get_current_and_next_fy()
         filtered_text = self._extract_relevant_guidance_text(raw_text)
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
@@ -74,22 +110,27 @@ class GuidanceScanner:
         prompt = f"""
         You are a quantitative Indian equity research analyst.
         Analyze this corporate disclosure / earnings commentary for company: {symbol}.
-        Target Fiscal Periods: {current_fy} or {next_fy}.
+        Target Fiscal Periods: Current ({current_fy}) or Upcoming ({next_fy}).
         
         Disclosure Text:
         \"\"\"{filtered_text}\"\"\"
 
-        Determine if management explicitly provided forward guidance of:
-        - 20% or higher PAT (Profit After Tax) growth, OR
-        - 20% or higher Revenue/Volume growth for the current ({current_fy}) or upcoming ({next_fy}) fiscal year.
+        CRITICAL FILTERING RULES:
+        1. ACCEPT ONLY forward-looking management guidance for {current_fy} or {next_fy}.
+        2. REJECT historical past performance ("we grew 25% last year").
+        3. REJECT vague aspirational multi-decade visions ("we hope to be ₹10,000 Cr by 2035").
+        4. Determine if management explicitly guided for:
+           - 20% or higher PAT (Profit After Tax) growth, OR
+           - 20% or higher Revenue/Volume growth, OR
+           - Major Capex expansion > 15% of gross block.
 
         Return strict JSON only (no markdown, no backticks):
         {{
             "has_20pct_guidance": true or false,
-            "metric": "PAT" or "Revenue" or "Volume" or "None",
+            "metric": "PAT" or "Revenue" or "Volume" or "Capex" or "None",
             "guidance_pct": float or null,
             "target_period": "{current_fy}" or "{next_fy}" or "Multi-Year",
-            "summary": "1 concise sentence explaining the specific guidance given"
+            "summary": "1 concise sentence explaining the specific forward guidance given"
         }}
         """
 
@@ -124,7 +165,7 @@ class GuidanceScanner:
 
     def scan_bse_guidance(self) -> List[Dict]:
         """
-        Polls BSE corporate announcements with pre-filtering and paced API calls.
+        Polls BSE corporate announcements with pre-filtering, deduplication, and paced API calls.
         """
         url = "https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w"
         params = {
@@ -139,6 +180,8 @@ class GuidanceScanner:
 
         logger.info("Scanning BSE corporate updates for management guidance...")
         high_guidance_hits = []
+        current_fy, next_fy, quarter_tag = self._get_current_and_next_fy()
+
         try:
             resp = self.session.get(url, params=params, timeout=20)
             if resp.status_code == 200:
@@ -157,8 +200,14 @@ class GuidanceScanner:
                         if not self.equity_filter.is_valid_operating_stock(symbol):
                             continue
 
-                        # Check state persistence
+                        # Check state persistence (permaban / 30-day drop)
                         if self.state_store.is_ticker_silenced(symbol):
+                            continue
+
+                        # Deduplication check: Avoid alerting twice for same (symbol, quarter)
+                        dedup_key = f"{symbol}:{quarter_tag}"
+                        if dedup_key in self.history:
+                            logger.info(f"Skipping {symbol}: already alerted for {quarter_tag}")
                             continue
 
                         # Paced API call (sleep 3s to respect free-tier RPM)
@@ -168,7 +217,6 @@ class GuidanceScanner:
                         if gemini_res and gemini_res.get("has_20pct_guidance"):
                             pct = gemini_res.get("guidance_pct", 20.0)
                             if pct and pct >= 20.0:
-                                current_fy, next_fy = self._get_current_and_next_fy()
                                 period = gemini_res.get("target_period", current_fy)
                                 high_guidance_hits.append({
                                     "symbol": symbol,
@@ -176,8 +224,12 @@ class GuidanceScanner:
                                     "metric": gemini_res.get("metric", "PAT"),
                                     "guidance_pct": pct,
                                     "period": period,
-                                    "summary": gemini_res.get("summary", "")
+                                    "summary": gemini_res.get("summary", ""),
+                                    "quarter_tag": quarter_tag
                                 })
+                                # Mark as seen in history
+                                self.history[dedup_key] = datetime.now().isoformat()
+                                self._save_history()
 
         except Exception as e:
             logger.error(f"Error scanning corporate guidance: {e}")

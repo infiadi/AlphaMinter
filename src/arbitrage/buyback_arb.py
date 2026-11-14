@@ -21,17 +21,27 @@ class BuybackArbitrageCalculator:
         symbol: str,
         cmp: float,
         buyback_price: float,
+        buyback_type: str = "TENDER_OFFER",
         record_date_str: Optional[str] = None,
         expected_acceptance_ratio_pct: float = 50.0,
         expected_days_to_payout: int = 45
     ) -> Dict:
         """
         Calculates retail buyback metrics:
+        - Strict Guard: Only 'TENDER_OFFER' is viable (Open Market has NO 15% retail reservation).
         - Safe retail shares = floor(195,000 / CMP)
         - Final buy cutoff date (Record Date minus 2 trading days)
         - Expected profit and annualized return
         - Breakeven exit price on unaccepted shares
         """
+        # Guard: Reject Open Market buybacks (SEBI reintroduced August 2026 without retail reservation)
+        if buyback_type.upper() != "TENDER_OFFER":
+            return {
+                "symbol": symbol.upper(),
+                "is_viable": False,
+                "reason": f"Skipped: Buyback type '{buyback_type}' has no SEBI 15% Small Shareholder reservation."
+            }
+
         if cmp <= 0 or buyback_price <= cmp:
             return {"symbol": symbol, "is_viable": False, "reason": "CMP >= Buyback price"}
 

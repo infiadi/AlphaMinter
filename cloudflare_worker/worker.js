@@ -2,9 +2,11 @@
  * AlphaMinter Telegram Signal-Triage & State Engine (Hardened & Secure)
  * Cloudflare Worker + Cloudflare D1
  * 
- * Security Features:
- * 1. Strict Chat ID Whitelisting: Ignores any request not originating from YOUR personal TELEGRAM_CHAT_ID.
- * 2. Protected Internal API: /api/silenced-list requires matching X-Internal-Secret header.
+ * Features:
+ * 1. Strict Chat ID Whitelisting (Zero stranger access)
+ * 2. Protected Internal API (/api/silenced-list)
+ * 3. 1-Tap Triage Buttons ([Watchlist], [Drop 30D], [Permaban])
+ * 4. Interactive Commands: /watchlist, /banned, /unban <SYMBOL>
  */
 
 export default {
@@ -13,7 +15,6 @@ export default {
 
     // 1. Protected API endpoint for GitHub Actions
     if (url.pathname === "/api/silenced-list") {
-      // Security Guard: Verify internal secret if configured
       const authHeader = request.headers.get("X-Internal-Secret");
       if (env.INTERNAL_SECRET && authHeader !== env.INTERNAL_SECRET) {
         return new Response(JSON.stringify({ error: "Unauthorized access" }), {
@@ -22,10 +23,9 @@ export default {
         });
       }
 
-      const today = new Date().toISOString().split("T")[0];
       const { results } = await env.DB.prepare(
-        "SELECT symbol FROM stocks_state WHERE status = 'PERMABAN' OR (status = 'DROPPED_TEMP' AND cooldown_until >= ?)"
-      ).bind(today).all();
+        "SELECT symbol FROM stocks_state WHERE status = 'PERMABAN' OR (status = 'DROPPED_TEMP' AND cooldown_until > date('now'))"
+      ).all();
       const silenced = (results || []).map(r => r.symbol);
       return new Response(JSON.stringify({ silenced }), { headers: { "Content-Type": "application/json" } });
     }
@@ -38,7 +38,7 @@ export default {
         // Security Guard: Extract incoming Chat ID
         const incomingChatId = update.callback_query?.message?.chat?.id || update.message?.chat?.id;
 
-        // Strict Authorization: If TELEGRAM_CHAT_ID is set, reject any stranger trying to use your bot
+        // Strict Authorization: If TELEGRAM_CHAT_ID is set, reject strangers
         if (env.TELEGRAM_CHAT_ID && incomingChatId && incomingChatId.toString() !== env.TELEGRAM_CHAT_ID.toString()) {
           console.warn(`Unauthorized access attempt from Chat ID: ${incomingChatId}`);
           return new Response("Forbidden", { status: 403 });
@@ -91,7 +91,7 @@ export default {
           return new Response("OK");
         }
 
-        // Handle Interactive Text Commands (/watchlist, /banned)
+        // Handle Interactive Text Commands (/watchlist, /banned, /unban <SYMBOL>)
         if (update.message && update.message.text) {
           const text = update.message.text.trim();
           const chatId = update.message.chat.id;
@@ -103,7 +103,16 @@ export default {
           } else if (text === "/banned") {
             const { results } = await env.DB.prepare("SELECT symbol FROM stocks_state WHERE status = 'PERMABAN' ORDER BY updated_at DESC").all();
             const list = (results || []).map(r => `• <code>${r.symbol}</code>`).join("\n") || "<i>No permabanned stocks.</i>";
-            await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `<b>🚫 Permabanned Stocks:</b>\n\n${list}`);
+            await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `<b>🚫 Permabanned Stocks:</b>\n\n${list}\n\n<i>To unban a stock, send:</i>\n<code>/unban SYMBOL</code>`);
+          } else if (text.startsWith("/unban")) {
+            const parts = text.split(/\s+/);
+            if (parts.length < 2) {
+              await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "⚠️ <b>Usage:</b> <code>/unban SYMBOL</code>\n<i>Example: /unban GOLDIETF</i>");
+            } else {
+              const targetSymbol = parts[1].trim().toUpperCase();
+              await env.DB.prepare("DELETE FROM stocks_state WHERE symbol = ?").bind(targetSymbol).run();
+              await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `✅ <b>Unbanned <code>${targetSymbol}</code></b>.\nIt is now active for future scans.`);
+            }
           }
         }
       } catch (err) {

@@ -1,5 +1,6 @@
 # Environment Secrets
 .env
+*.env
 
 # Python artifacts
 __pycache__/
@@ -10,6 +11,11 @@ __pycache__/
 env/
 venv/
 
-# Local data caches (Cloudflare D1 is the single source of truth)
+# Cloudflare & Wrangler artifacts
+.wrangler/
+.dev.vars
+
+# Local data caches & logs (Cloudflare D1 is the single source of truth)
 data/*.db
 data/*.json
+*.log

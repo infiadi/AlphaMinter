@@ -1,0 +1,35 @@
+name: 5. 20%+ Management Guidance Scanner (Gemini AI)
+
+on:
+  schedule:
+    # 14:00 UTC = 7:30 PM IST (Monday through Friday)
+    - cron: '0 14 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  guidance-scanner:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Execute Guidance Scanner with Gemini API
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          WORKER_URL: https://alphaminter-bot.adityabhandari162.workers.dev
+        run: |
+          python -c "from src.storage.state_store import StateStore; from src.scanners.guidance_scanner import GuidanceScanner; from src.notifications.telegram_dispatcher import TelegramDispatcher; s = StateStore(); scanner = GuidanceScanner(state_store=s); dispatcher = TelegramDispatcher(); hits = scanner.scan_bse_guidance(); [dispatcher.send_stock_alert('🚀 20%+ GUIDANCE ALERT', h['symbol'], h['company'], [f'Metric: {h[\"metric\"]} Growth', f'Guidance: {h[\"guidance_pct\"]}% for {h[\"period\"]}'], h['summary']) for h in hits]; print(f'Guidance scan complete. Fired {len(hits)} alerts.')"

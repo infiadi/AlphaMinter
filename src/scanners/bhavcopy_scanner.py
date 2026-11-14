@@ -6,19 +6,20 @@ from typing import List, Dict, Tuple
 import requests
 from config.settings import NSE_HEADERS, MIN_DELIVERY_PCT, MIN_DELIVERY_TURNOVER_CR, MAX_DAILY_PRICE_CHANGE_PCT
 from src.storage.state_store import StateStore
+from src.scanners.equity_filter import EquityFilter
 
 logger = logging.getLogger(__name__)
 
 class BhavcopyDeliveryScanner:
     """
     Ultra-Lean NSE Bhavcopy Delivery % Scanner:
-    Uses Python's standard 'csv' library (zero pandas dependency, instant execution).
-    Guard 1: Filter strictly for SERIES == 'EQ' (eliminates BE/BZ 100% mandatory delivery false alarms).
+    Guard 1: Filter strictly for SERIES == 'EQ' and operating stocks (NO ETFs, NO Mutual Funds, NO REITs).
     Guard 2: Check DATE1 == today (exits cleanly on market holidays when NSE returns yesterday's file).
-    Guard 3: Delivery Turnover >= ₹5 Crore (DELIV_QTY * CLOSE_PRICE >= 5 Cr) to eliminate illiquid micro-caps.
+    Guard 3: Delivery Turnover >= ₹5 Crore (DELIV_QTY * CLOSE_PRICE >= 5 Cr) and Market Cap >= ₹5,000 Cr.
     """
     def __init__(self, state_store: StateStore = None):
         self.state_store = state_store or StateStore()
+        self.equity_filter = EquityFilter()
         self.session = requests.Session()
         self.session.headers.update(NSE_HEADERS)
 
@@ -102,6 +103,10 @@ class BhavcopyDeliveryScanner:
 
             symbol = str(r.get('SYMBOL', '')).strip().upper()
             if not symbol or self.state_store.is_ticker_silenced(symbol):
+                continue
+
+            # Guard 1b: Exclude ETFs, Mutual Funds, REITs, and InvITs
+            if not self.equity_filter.is_valid_operating_stock(symbol):
                 continue
 
             try:

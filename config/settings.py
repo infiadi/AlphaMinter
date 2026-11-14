@@ -12,6 +12,10 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 WORKER_URL = os.getenv("WORKER_URL", "https://alphaminter-bot.adityabhandari162.workers.dev").rstrip("/")
 INTERNAL_SECRET = os.getenv("INTERNAL_SECRET", "")
 
+# Gemini Model Configuration (Free Tier, Fast & Cost-Free)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+
 # Paths
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)

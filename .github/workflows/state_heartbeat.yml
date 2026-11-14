@@ -11,4 +11,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Keepalive Heartbeat
-        run: echo "AlphaMinter Cron Keepalive Ping: $(date -u)"
+        run: |
+          echo "AlphaMinter Cron Keepalive Ping: $(date -u)"

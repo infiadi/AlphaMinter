@@ -31,4 +31,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           WORKER_URL: https://alphaminter-bot.adityabhandari162.workers.dev
         run: |
-          python -c "from src.storage.state_store import StateStore; from src.scanners.pead_scanner import PEADScanner; s = StateStore(); scanner = PEADScanner(state_store=s); res = scanner.fetch_bse_financial_results(); print(f'PEAD scan complete. Polled {len(res)} filings.')"
+          python run_pead_pipeline.py

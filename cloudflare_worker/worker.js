@@ -30,6 +30,23 @@ export default {
       return new Response(JSON.stringify({ silenced }), { headers: { "Content-Type": "application/json" } });
     }
 
+    // 2. Telegram Native Command Menu Registration (/api/setup-commands)
+    if (url.pathname === "/api/setup-commands") {
+      const commands = [
+        { command: "watchlist", description: "View stocks on active watchlist" },
+        { command: "banned", description: "View permabanned stocks" },
+        { command: "unban", description: "Restore a stock: /unban SYMBOL" },
+        { command: "help", description: "Show commands and scan schedule" }
+      ];
+      const resp = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setMyCommands`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commands })
+      });
+      const data = await resp.json();
+      return new Response(JSON.stringify(data), { headers: { "Content-Type": "application/json" } });
+    }
+
     // 2. Telegram Webhook Handler (Strict Whitelist)
     if (request.method === "POST") {
       try {
@@ -115,7 +132,22 @@ export default {
             `• <b>19:30</b> — 20%+ Forward Guidance (Gemini AI)\n\n` +
             `<i>Tip: Tap or copy any command above to run it instantly.</i>`;
 
-          if (lowerText === "/watchlist" || lowerText === "watchlist") {
+          if (lowerText === "/help" || lowerText === "help" || lowerText === "/start" || lowerText === "start") {
+            // Register Telegram native popup menu commands in background
+            fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setMyCommands`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                commands: [
+                  { command: "watchlist", description: "View stocks on active watchlist" },
+                  { command: "banned", description: "View permabanned stocks" },
+                  { command: "unban", description: "Restore a stock: /unban SYMBOL" },
+                  { command: "help", description: "Show commands and scan schedule" }
+                ]
+              })
+            }).catch(() => {});
+            await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, helpMessage);
+          } else if (lowerText === "/watchlist" || lowerText === "watchlist") {
             const { results } = await env.DB.prepare("SELECT symbol FROM stocks_state WHERE status = 'WATCHLIST' ORDER BY updated_at DESC").all();
             const list = (results || []).map(r => `• <code>${r.symbol}</code>`).join("\n") || "<i>Watchlist is empty.</i>";
             await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `<b>⭐ Active Watchlist:</b>\n\n${list}`);

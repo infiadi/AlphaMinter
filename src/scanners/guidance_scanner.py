@@ -6,6 +6,7 @@ import time
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
+import xml.etree.ElementTree as ET
 import requests
 from config.settings import BSE_HEADERS, GEMINI_API_KEY, GEMINI_MODEL, BASE_DIR
 from src.storage.state_store import StateStore
@@ -15,12 +16,16 @@ logger = logging.getLogger(__name__)
 
 class GuidanceScanner:
     """
-    Scans corporate disclosures for operating equities (Market Cap >= ₹5,000 Cr).
-    Uses the free Gemini 3.5 Flash Lite API (500 requests/day free tier) with:
-    1. Dynamic fiscal year and quarter detection (zero hardcoded FY strings).
-    2. Smart text extraction to keep token payload small and prevent TPM limits.
-    3. (Symbol, Quarter) deduplication so multiple filings in the same quarter don't alert twice.
-    4. Exponential backoff and pacing on API calls to strictly avoid HTTP 429.
+    Dual-Source Forward Management Guidance Scanner (v2.5.0):
+    1. Primary Stream: Official BSE Corporate LODR Disclosures (Investor Presentations, Concall Transcripts, Press Releases).
+    2. Secondary Stream: Real-Time Google News RSS (Moneycontrol, Economic Times, Livemint, CNBC-TV18).
+       - Zero Cloudflare / Akamai blocking risks on GitHub Actions.
+       - Captures CEO/MD media interviews and market briefings.
+    3. Quantitative LLM Extraction: Uses Gemini 3.5 Flash Lite (500 req/day free tier) with strict JSON output.
+    4. Guardrails:
+       - Dynamic FY/Quarter detection (zero hardcoded strings).
+       - (Symbol, Quarter) deduplication prevents multiple filings in the same quarter from spamming alerts.
+       - Paced 3.0s delay between LLM calls to respect free-tier RPM/TPM limits.
     """
     def __init__(self, state_store: StateStore = None, gemini_api_key: str = GEMINI_API_KEY, model: str = GEMINI_MODEL):
         self.state_store = state_store or StateStore()
@@ -94,7 +99,7 @@ class GuidanceScanner:
             return combined[:max_chars]
         return text[:max_chars]
 
-    def analyze_guidance_with_gemini(self, symbol: str, raw_text: str) -> Optional[Dict]:
+    def analyze_guidance_with_gemini(self, context_title: str, raw_text: str) -> Optional[Dict]:
         """
         Calls Gemini 3.5 Flash Lite with structured JSON schema and dynamic period detection.
         """
@@ -109,10 +114,10 @@ class GuidanceScanner:
         
         prompt = f"""
         You are a quantitative Indian equity research analyst.
-        Analyze this corporate disclosure / earnings commentary for company: {symbol}.
+        Analyze this corporate announcement or financial news article: "{context_title}".
         Target Fiscal Periods: Current ({current_fy}) or Upcoming ({next_fy}).
         
-        Disclosure Text:
+        Content Text:
         \"\"\"{filtered_text}\"\"\"
 
         CRITICAL FILTERING RULES:
@@ -124,9 +129,10 @@ class GuidanceScanner:
            - 20% or higher Revenue/Volume growth, OR
            - Major Capex expansion > 15% of gross block.
 
-        Return strict JSON only (no markdown, no backticks):
+        Return strict JSON only (no markdown fences, no backticks):
         {{
             "has_20pct_guidance": true or false,
+            "symbol": "NSE/BSE stock ticker or company name",
             "metric": "PAT" or "Revenue" or "Volume" or "Capex" or "None",
             "guidance_pct": float or null,
             "target_period": "{current_fy}" or "{next_fy}" or "Multi-Year",
@@ -139,7 +145,7 @@ class GuidanceScanner:
             "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"}
         }
 
-        # Handle rate limits with retries
+        # Handle rate limits with exponential backoff
         for attempt in range(3):
             try:
                 resp = requests.post(url, json=payload, timeout=15)
@@ -165,7 +171,7 @@ class GuidanceScanner:
 
     def scan_bse_guidance(self) -> List[Dict]:
         """
-        Polls BSE corporate announcements with pre-filtering, deduplication, and paced API calls.
+        Stream 1: Polls BSE corporate announcements (LODR Investor Presentations, Concalls, Transcripts).
         """
         url = "https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w"
         params = {
@@ -178,7 +184,7 @@ class GuidanceScanner:
             "strType": "C"
         }
 
-        logger.info("Scanning BSE corporate updates for management guidance...")
+        logger.info("Scanning Stream 1: BSE corporate disclosures for management guidance...")
         high_guidance_hits = []
         current_fy, next_fy, quarter_tag = self._get_current_and_next_fy()
 
@@ -189,14 +195,17 @@ class GuidanceScanner:
                 for item in table:
                     headline = str(item.get("NEWSSUB", "")).strip()
                     desc = str(item.get("MORE", "") or item.get("HEADLINE", "")).strip()
+                    company_raw = str(item.get("SLONGNAME", "")).strip()
                     combined_text = f"{headline} {desc}"
 
                     # Pre-filter by relevant disclosure subject line first
                     if any(k in combined_text.lower() for k in ["investor presentation", "concall", "guidance", "transcript", "analyst meet", "outlook", "press release"]):
-                        symbol = str(item.get("SCRIP_CD", "")).strip().upper()
-                        company = str(item.get("SLONGNAME", symbol)).strip()
+                        scrip = str(item.get("SCRIP_CD", "")).strip().upper()
+                        symbol = self.equity_filter.resolve_symbol(company_raw, scrip)
+                        if not symbol:
+                            continue
 
-                        # Exclude ETFs, REITs, MFs
+                        # Exclude non-equities (ETFs, REITs)
                         if not self.equity_filter.is_valid_operating_stock(symbol):
                             continue
 
@@ -207,12 +216,11 @@ class GuidanceScanner:
                         # Deduplication check: Avoid alerting twice for same (symbol, quarter)
                         dedup_key = f"{symbol}:{quarter_tag}"
                         if dedup_key in self.history:
-                            logger.info(f"Skipping {symbol}: already alerted for {quarter_tag}")
                             continue
 
                         # Paced API call (sleep 3s to respect free-tier RPM)
                         time.sleep(3)
-                        gemini_res = self.analyze_guidance_with_gemini(symbol, combined_text)
+                        gemini_res = self.analyze_guidance_with_gemini(f"{symbol} ({company_raw})", combined_text)
                         
                         if gemini_res and gemini_res.get("has_20pct_guidance"):
                             pct = gemini_res.get("guidance_pct", 20.0)
@@ -220,7 +228,8 @@ class GuidanceScanner:
                                 period = gemini_res.get("target_period", current_fy)
                                 high_guidance_hits.append({
                                     "symbol": symbol,
-                                    "company": company,
+                                    "company": company_raw or symbol,
+                                    "source": "BSE Official Filing",
                                     "metric": gemini_res.get("metric", "PAT"),
                                     "guidance_pct": pct,
                                     "period": period,
@@ -232,6 +241,98 @@ class GuidanceScanner:
                                 self._save_history()
 
         except Exception as e:
-            logger.error(f"Error scanning corporate guidance: {e}")
+            logger.error(f"Error scanning BSE guidance filings: {e}")
 
         return high_guidance_hits
+
+    def scan_google_news_guidance(self) -> List[Dict]:
+        """
+        Stream 2: Polls Google News RSS for Indian Equities forward guidance (Moneycontrol, Economic Times, Livemint, CNBC-TV18).
+        Cloud-safe RSS XML: Zero Cloudflare challenges or IP blocks on GitHub Actions runners.
+        """
+        rss_url = (
+            "https://news.google.com/rss/search?"
+            "q=guidance+OR+outlook+OR+target+when:24h+inurl:moneycontrol+OR+inurl:economictimes+OR+inurl:livemint"
+            "&hl=en-IN&gl=IN&ceid=IN:en"
+        )
+        logger.info("Scanning Stream 2: Google News RSS for Indian equities forward guidance coverage...")
+        news_hits = []
+        current_fy, next_fy, quarter_tag = self._get_current_and_next_fy()
+
+        try:
+            resp = self.session.get(rss_url, timeout=15)
+            if resp.status_code == 200 and "<rss" in resp.text:
+                root = ET.fromstring(resp.content)
+                items = root.findall(".//item")
+                logger.info(f"Found {len(items)} news headlines in Google News feed.")
+                
+                # Check top 20 items to respect rate limits
+                for item in items[:20]:
+                    title = item.findtext("title", "").strip()
+                    desc = item.findtext("description", "").strip()
+                    clean_desc = re.sub(r"<[^>]+>", " ", desc).strip()
+                    combined_text = f"{title}. {clean_desc}"
+
+                    # Quick pre-filter: must contain forward guidance keywords
+                    if not any(k in combined_text.lower() for k in ["guidance", "target", "outlook", "growth", "pat", "revenue", "cagr", "capex", "ebitda"]):
+                        continue
+
+                    if not self.is_gemini_configured():
+                        continue
+
+                    # Paced API call (sleep 3s to respect free-tier RPM)
+                    time.sleep(3)
+                    gemini_res = self.analyze_guidance_with_gemini(title, combined_text)
+
+                    if gemini_res and gemini_res.get("has_20pct_guidance"):
+                        pct = gemini_res.get("guidance_pct", 20.0)
+                        if pct and pct >= 20.0:
+                            extracted_sym = gemini_res.get("symbol", "").upper().strip()
+                            resolved_sym = self.equity_filter.resolve_symbol(extracted_sym, extracted_sym)
+
+                            if not resolved_sym or not self.equity_filter.is_valid_operating_stock(resolved_sym):
+                                continue
+
+                            if self.state_store.is_ticker_silenced(resolved_sym):
+                                continue
+
+                            dedup_key = f"{resolved_sym}:{quarter_tag}"
+                            if dedup_key in self.history:
+                                continue
+
+                            period = gemini_res.get("target_period", current_fy)
+                            news_source = title.split(" - ")[-1] if " - " in title else "Financial Media"
+                            news_hits.append({
+                                "symbol": resolved_sym,
+                                "company": title.split(" - ")[0] if " - " in title else resolved_sym,
+                                "source": f"News ({news_source})",
+                                "metric": gemini_res.get("metric", "PAT"),
+                                "guidance_pct": pct,
+                                "period": period,
+                                "summary": gemini_res.get("summary", ""),
+                                "quarter_tag": quarter_tag
+                            })
+                            self.history[dedup_key] = datetime.now().isoformat()
+                            self._save_history()
+
+        except Exception as e:
+            logger.error(f"Error scanning Google News RSS for guidance: {e}")
+
+        return news_hits
+
+    def scan_all_guidance(self) -> List[Dict]:
+        """
+        Executes Dual-Stream Guidance Detection:
+        1. BSE Corporate LODR Disclosures
+        2. Google News RSS Feeds
+        """
+        all_hits = []
+        bse_hits = self.scan_bse_guidance()
+        all_hits.extend(bse_hits)
+
+        news_hits = self.scan_google_news_guidance()
+        for hit in news_hits:
+            if not any(h['symbol'] == hit['symbol'] for h in all_hits):
+                all_hits.append(hit)
+
+        return all_hits

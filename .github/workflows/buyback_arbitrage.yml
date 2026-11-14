@@ -31,4 +31,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           WORKER_URL: https://alphaminter-bot.adityabhandari162.workers.dev
         run: |
-          python -c "from src.storage.state_store import StateStore; from src.arbitrage.buyback_arb import BuybackArbitrageCalculator; s = StateStore(); calc = BuybackArbitrageCalculator(state_store=s); print('Buyback monitor executed.')"
+          python run_buyback_pipeline.py

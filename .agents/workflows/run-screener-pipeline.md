@@ -1,6 +1,6 @@
 ---
 name: run-screener-pipeline
-description: End-to-end AlphaMinter local screener and autonomous batched AI evaluation pipeline. Runs zero-quota Python preparation, evaluates candidates in parallel chunks of 3 via equity-analyst, and pushes strong picks to Telegram with 1-tap triage buttons.
+description: End-to-end AlphaMinter local screener and autonomous batched AI evaluation pipeline. Runs zero-quota Python preparation, evaluates candidates in parallel chunks of 3 via equity-analyst with strict forward guidance & anti-derating checks, and pushes strong picks to Telegram sorted with top picks at the bottom.
 ---
 
 # AlphaMinter Screener & Autonomous AI Evaluation Pipeline
@@ -15,16 +15,16 @@ description: End-to-end AlphaMinter local screener and autonomous batched AI eva
 
 ## Autonomous Execution via `run_workflow`
 
-Execute the workflow in the background:
+Execute the workflow in the background (use absolute path):
 ```python
 run_workflow(
-    ScriptPath="workflows/screener_pipeline.py",
+    ScriptPath="c:/Users/amits/OneDrive/Documents/MoneyMinter/AlphaMinter/workflows/screener_pipeline.py",
     Description="AlphaMinter End-to-End Screener Pipeline"
 )
 ```
 
 The script autonomously coordinates:
 - Stage 1: Data preparation, screen merging, and quant gating (`src/local/prepare_screener_batch.py`).
-- Stage 2: Parallel `@equity-analyst` evaluation in chunks of 3 with try/except error isolation.
+- Stage 2: Parallel `@equity-analyst` evaluation in chunks of 3 with try/except error isolation. Enforces Anti-Derating & Forward Concall Guidance vs. P/E checks.
 - Stage 3: Deterministic Python markdown & JSONL generation and atomic per-chunk `data/reviewed_history.json` checkpointing.
-- Stage 4: Telegram alert dispatch (`src/local/push_screener_digest.py`).
+- Stage 4: Telegram alert dispatch (`src/local/push_screener_digest.py`) sorted so the strongest/best picks sit at the bottom of the chat, with persistent alert deduplication.

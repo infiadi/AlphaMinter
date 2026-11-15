@@ -9,6 +9,7 @@ import sys
 import json
 import re
 import subprocess
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -32,6 +33,7 @@ if "phase" not in globals():
         print(f"\n{'='*20} {name} {'='*20}")
 
 CHUNK_SIZE = 3
+PYTHON_EXE = shutil.which("python") or "python"
 
 
 def extract_growth(growth_dict: Dict[str, Any], period: str) -> Optional[float]:
@@ -72,9 +74,9 @@ def build_analyst_prompt(candidate: Dict[str, Any]) -> str:
 
     prompt = f"""You are analyzing candidate stock {sym} ({name}).
 Evaluate this single stock using its pre-prepared quantitative dossier below.
-Follow the STRICT BEAR-FIRST EVALUATION PROTOCOL.
+Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
 
-### CANDIDATE DOSSIER:
+### CANDIDATE QUANTITATIVE DOSSIER:
 - Symbol: {sym} | Company: {name}
 - Matched Screens: {', '.join(screens)} (Hits: {candidate.get('screen_count', 1)})
 - Rubrics: {' '.join(rubrics)}
@@ -93,25 +95,46 @@ Follow the STRICT BEAR-FIRST EVALUATION PROTOCOL.
 - Flags: Standard Flags={flags or 'None'} | Forensic Flags={forensic_flags or 'None'}
 - Review Context: {review_reason if needs_review else 'Standard quant qualification'}
 
-### STRICT BEAR-FIRST EVALUATION PROTOCOL:
-1. Conduct Bear-First Critique (multiple derating, balance sheet/working capital, cyclical vs moat decay).
-2. Perform targeted web search for recent concall highlights, guidance, and analyst tension.
-3. Test the >= 20% 3Y CAGR hurdle across alpha pathways: PE_RERATING, EARNINGS_COMPOUNDER, CAPEX_INFLECTION, CYCLICAL_MARKET_PROXY.
-4. Conclude with verdict: STRONG_BUY_WATCH, ACCUMULATE_ON_DIP, HOLD_WATCH, or REJECT.
+### STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE PROTOCOL:
+1. SECTOR LIFECYCLE (Sunrise vs. Sunset vs. Contra Bet):
+   - Quant screens already filter past growth (3Y sales/profit > 20%, ROCE > 20%, PEG < 2).
+   - Your primary job is to evaluate FUTURE GROWTH VISIBILITY for FY27-FY29:
+     * SUNRISE_SECTOR: Expanding TAM (>18-25% CAGR), multi-year tailwinds (Power T&D, Defense, EMS, Renewable/BESS, Data Centers, CDMO, Quick Commerce). High conviction candidates.
+     * CONTRA_BET (e.g. IT services facing AI threat / discretionary cuts, or Agrochem destocking): Valuations are at all-time lows (2020 price levels), BUT future growth phase is UNCERTAIN. MANDATORY RULE: Contra bets CANNOT be STRONG_BUY_WATCH! Unless there is verifiable proof in recent concalls that revenue growth has bottomed and re-accelerated, CLASSIFY AS HOLD_WATCH (Contra Watchlist).
+     * CYCLICAL_INFLECTION: Upcoming capex coming online in FY26-FY28 backed by firm order book.
+     * SUNSET_STAGNANT: Low volume growth (<8%), commoditized price-taker, moat decay. Mandatory REJECT or HOLD_WATCH.
+2. FORWARD GROWTH PHASE AUDIT (FY27-FY29 Visibility):
+   - Check concall and broker reports for: executable order book (2x-3x revenue), capacity commissioning dates, margin durability.
+   - Is future growth accelerating or plateauing?
+3. ANTI-DERATING & FORWARD PEG GATE:
+   - Calculate Forward PEG = Current P/E / Forward Guided EPS Growth %.
+   - If P/E > 30x and forward guidance is < 16% (or unguided), DOWNGRADE to HOLD_WATCH or REJECT.
+   - Net 3Y CAGR = Forward EPS Growth % - Derating Drag %. Must be >= 20% (>=25% for STRONG_BUY_WATCH).
+4. RUTHLESS INSTITUTIONAL SELECTIVITY:
+   - Target approval rate: Only 10-15% of candidates (2-4 stocks out of 25-30) should ever be approved!
+   - STRONG_BUY_WATCH: Conviction 8.5-10.0, Sunrise Sector / Capex Inflection, verified forward growth >= 20%, Forward PEG <= 1.8x, Net CAGR >= 25%.
+   - ACCUMULATE_ON_DIP: Conviction 7.5-8.4, growing sector, solid moat, forward growth >= 16%, pullbacks elevate return to >=25%.
+   - HOLD_WATCH: Conviction 5.0-7.4. All Contra Bets (IT with AI threat), mature plateaus, or unguided stocks. (Excluded from Telegram alerts).
+   - REJECT: Conviction 1.0-4.9. Disrupted sectors, growth traps, governance flags. (Excluded from Telegram alerts).
 
 CRITICAL: Return ONLY a valid, compact JSON object matching this schema. No introductory text, no conversational filler, no markdown report text.
 ```json
 {{
   "ticker": "{sym}",
   "verdict": "STRONG_BUY_WATCH|ACCUMULATE_ON_DIP|HOLD_WATCH|REJECT",
-  "conviction_score": 8,
+  "conviction_score": 8.5,
+  "sector_classification": "SUNRISE_SECTOR|CYCLICAL_INFLECTION|CONTRA_BET|SUNSET_STAGNANT",
+  "future_growth_phase": "ACCELERATING_EXPANSION|SECULAR_COMPOUNDER|UNCERTAIN_CONTRA|MATURE_PLATEAU|STRUCTURAL_DECLINE",
   "pathway_id": "PE_RERATING|EARNINGS_COMPOUNDER|CAPEX_INFLECTION|CYCLICAL_MARKET_PROXY",
-  "expected_cagr_3y": "20-25%",
-  "cagr_breakdown": "Explicit return math: EPS growth % + P/E delta %",
+  "expected_cagr_3y": "22-26%",
+  "cagr_breakdown": "Forward EPS growth 24% - Multiple derating drag 3% = Net 21% CAGR",
   "margin_of_safety": "High|Moderate|Low with brief justification",
-  "thesis": "Concise 1-2 sentence core investment thesis",
-  "guidance_audit": "Summary of management guidance, concall analyst tension, and capex roadmap",
-  "bear_risks": "Summary of forensic risks, multiple derating risks, and cyclical headwinds",
+  "why_picked": "Specific structural catalyst, moat, and market share driver in a sunrise sector",
+  "forward_growth_catalysts": "Concrete forward visibility: Upcoming capacity commissioning dates, order book executable timeline, or market-share expansion",
+  "sector_and_contra_analysis": "Explicit evaluation of whether sector is Sunrise vs Sunset, and if a Contra Bet (e.g. IT with AI threat), why it is either ready or must wait on HOLD_WATCH",
+  "forward_guidance_vs_pe": "FY27/FY28 guided growth % vs current P/E (Forward PEG: X.Xx). Concall analyst scrutiny summary.",
+  "derating_risk_floor_pe": "Multiple compression downside if growth decelerates: 5Y median P/E and valuation floor",
+  "bear_risks": "Summary of forensic risks, balance sheet/working capital, and cyclical headwinds",
   "kill_switches": ["Trigger 1", "Trigger 2", "Trigger 3"]
 }}
 ```"""
@@ -145,9 +168,33 @@ def parse_agent_response(resp: Any, symbol: str) -> Optional[Dict[str, Any]]:
     if "ticker" not in data:
         data["ticker"] = symbol
 
+    # Handle synonyms and fallback keys
+    if "why_picked" not in data and "thesis" in data:
+        data["why_picked"] = data["thesis"]
+    if "thesis" not in data and "why_picked" in data:
+        data["thesis"] = data["why_picked"]
+
+    if "forward_guidance_vs_pe" not in data and "guidance_audit" in data:
+        data["forward_guidance_vs_pe"] = data["guidance_audit"]
+    if "guidance_audit" not in data and "forward_guidance_vs_pe" in data:
+        data["guidance_audit"] = data["forward_guidance_vs_pe"]
+
+    if "derating_risk_floor_pe" not in data and "bear_risks" in data:
+        data["derating_risk_floor_pe"] = data["bear_risks"]
+
+    # Sector & future growth phase fallbacks
+    if "sector_classification" not in data:
+        data["sector_classification"] = "SUNRISE_SECTOR" if str(data.get("verdict")) == "STRONG_BUY_WATCH" else "CYCLICAL_INFLECTION"
+    if "future_growth_phase" not in data:
+        data["future_growth_phase"] = "ACCELERATING_EXPANSION" if str(data.get("verdict")) == "STRONG_BUY_WATCH" else "SECULAR_COMPOUNDER"
+    if "forward_growth_catalysts" not in data:
+        data["forward_growth_catalysts"] = data.get("why_picked", "")
+    if "sector_and_contra_analysis" not in data:
+        data["sector_and_contra_analysis"] = data.get("thesis", "")
+
     req_keys = [
         "ticker", "verdict", "conviction_score", "pathway_id",
-        "cagr_breakdown", "bear_risks", "guidance_audit", "kill_switches"
+        "cagr_breakdown", "kill_switches"
     ]
     for k in req_keys:
         if k not in data:
@@ -195,9 +242,6 @@ def append_md(md_text: str, date_str: str):
         f.write(md_text + "\n")
 
 
-import shutil
-PYTHON_EXE = shutil.which("python") or "python"
-
 async def run_pipeline():
     phase("Stage 1: Screener Batch Preparation & Quant Gate")
     log("Executing Stage 1 Python batch preparation script...")
@@ -240,6 +284,7 @@ async def run_pipeline():
     history = load_reviewed_history()
 
     num_chunks = (total_qualified + CHUNK_SIZE - 1) // CHUNK_SIZE
+    evaluated_symbols = []
 
     for chunk_idx in range(num_chunks):
         start_i = chunk_idx * CHUNK_SIZE
@@ -282,6 +327,8 @@ async def run_pipeline():
                 log(f"⚠️ [{sym}] Skipping persistence due to invalid or malformed JSON. Will retry on next run.")
                 continue
 
+            evaluated_symbols.append(sym)
+
             # Merge quantitative dossier data with qualitative analyst verdict
             dossier = cand_item.get("dossier", {})
             metrics = dossier.get("derived_metrics", {})
@@ -292,14 +339,21 @@ async def run_pipeline():
             flags = cand_item.get("negative_flags", [])
 
             verdict = parsed["verdict"]
-            conviction = parsed.get("conviction_score", 8)
+            conviction = parsed.get("conviction_score", 8.0)
+            sector_class = parsed.get("sector_classification", "SUNRISE_SECTOR")
+            growth_phase = parsed.get("future_growth_phase", "ACCELERATING_EXPANSION")
             pathway = parsed.get("pathway_id", "EARNINGS_COMPOUNDER")
             expected_cagr = parsed.get("expected_cagr_3y", "20%+")
             cagr_breakdown = parsed.get("cagr_breakdown", "")
             margin_of_safety = parsed.get("margin_of_safety", "Moderate")
-            thesis = parsed.get("thesis", f"Quality compounder in {', '.join(screens)}.")
-            guidance = parsed.get("guidance_audit", "")
-            bear_risks = parsed.get("bear_risks", "")
+            why_picked = parsed.get("why_picked") or parsed.get("thesis", f"Quality compounder in {', '.join(screens)}.")
+            thesis = why_picked
+            forward_growth_catalysts = parsed.get("forward_growth_catalysts", "")
+            sector_contra = parsed.get("sector_and_contra_analysis", "")
+            forward_guidance = parsed.get("forward_guidance_vs_pe") or parsed.get("guidance_audit", "")
+            guidance = forward_guidance
+            derating_risk = parsed.get("derating_risk_floor_pe") or parsed.get("bear_risks", "")
+            bear_risks = derating_risk
             kill_switches = parsed.get("kill_switches", [])
 
             cmp_val = metrics.get("current_price") or top_ratios.get("Current Price")
@@ -320,6 +374,8 @@ async def run_pipeline():
                 "name": cand_item.get("name", sym),
                 "verdict": verdict,
                 "conviction_score": conviction,
+                "sector_classification": sector_class,
+                "future_growth_phase": growth_phase,
                 "alpha_pathway": pathway,
                 "expected_cagr_3y": expected_cagr,
                 "return_math_breakdown": cagr_breakdown,
@@ -340,8 +396,13 @@ async def run_pipeline():
                     "sales_growth_3y": sales_3y,
                     "profit_growth_3y": pat_3y
                 },
+                "why_picked": why_picked,
                 "thesis": thesis,
+                "forward_growth_catalysts": forward_growth_catalysts,
+                "sector_and_contra_analysis": sector_contra,
+                "forward_guidance_vs_pe": forward_guidance,
                 "guidance_summary": guidance,
+                "derating_risk_floor_pe": derating_risk,
                 "risks_summary": bear_risks,
                 "bear_kill_switches": kill_switches
             }
@@ -356,14 +417,17 @@ async def run_pipeline():
             md_block = f"""### [{verdict}] {sym} - {cand_item.get('name', sym)}
 - **Date**: {today_str}
 - **Conviction Score**: {conviction}/10 | **Alpha Pathway**: {pathway}
+- **Sector Lifecycle**: {sector_class} | **Future Growth Phase**: {growth_phase}
 - **Expected 3Y CAGR**: {expected_cagr} (Return Math: {cagr_breakdown})
 - **Margin of Safety**: {margin_of_safety}
 - **Matched Screens**: {', '.join(screens)} (Hits: {screen_count})
 - **Warning Flags**: {flags_fmt}
 - **Key Metrics**: CMP: {cmp_fmt} | P/E: {pe_val}x | M.Cap: {mcap_fmt} | ROCE: {roce_val}% | 3Y CFO/PAT: {cfo_pat_val}x
-- **Moat & Growth Drivers**: {thesis}
-- **FY27/FY28 Management Guidance**: {guidance}
-- **Risks & Red Flags**: {bear_risks}
+- **Sector Dynamics & Contra Analysis**: {sector_contra}
+- **Future Growth Drivers (FY27-FY29)**: {forward_growth_catalysts}
+- **Why It Was Picked (Moat & Catalyst)**: {why_picked}
+- **Forward Guidance vs. P/E (Anti-Derating)**: {forward_guidance}
+- **Bear Derating Risk & Valuation Floor**: {derating_risk}
 - **Thesis Invalidation Triggers**:
 {kill_switches_md}
 ---"""
@@ -374,6 +438,8 @@ async def run_pipeline():
                 "last_reviewed_at": datetime.now().isoformat(),
                 "screen_count": screen_count,
                 "verdict": verdict,
+                "sector_classification": sector_class,
+                "future_growth_phase": growth_phase,
                 "matched_screens": screens,
                 "metrics": {
                     "market_cap_cr": mcap_val,
@@ -388,7 +454,7 @@ async def run_pipeline():
                 }
             }
             history_updates += 1
-            log(f"✅ [{sym}] Verdict: {verdict} ({conviction}/10) | Expected CAGR: {expected_cagr}")
+            log(f"✅ [{sym}] Verdict: {verdict} ({conviction}/10) | Sector: {sector_class} ({growth_phase}) | Expected CAGR: {expected_cagr}")
 
         # Atomic per-chunk checkpoint flush
         if history_updates > 0:
@@ -396,10 +462,14 @@ async def run_pipeline():
             log(f"💾 Checkpointed {history_updates} reviewed stocks to data/reviewed_history.json")
 
     phase("Stage 3: Push Screener Digest to Telegram")
-    log("Executing push_screener_digest.py...")
+    log("Executing push_screener_digest.py with newly evaluated symbols...")
+
+    cmd = [PYTHON_EXE, "src/local/push_screener_digest.py"]
+    if evaluated_symbols:
+        cmd.extend(["--symbols", ",".join(evaluated_symbols)])
 
     push_proc = subprocess.run(
-        [PYTHON_EXE, "src/local/push_screener_digest.py"],
+        cmd,
         capture_output=True,
         text=True,
         check=False,

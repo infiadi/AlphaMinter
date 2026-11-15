@@ -1,7 +1,7 @@
 """
 Utility to reset AlphaMinter pipeline state for a 100% clean, first-time run.
 Resets:
-1. data/reviewed_history.json (45-day review cooldown)
+1. data/reviewed_history.json (7-day review cooldown)
 2. data/dispatched_alerts.json (7-day Telegram deduplication shield)
 3. data/cache/screens/ (6-hour screener web page cache)
 4. data/prepared_queues/ (temporary batch queues)
@@ -41,7 +41,7 @@ def reset_pipeline_state(clear_dossier_cache: bool = False, backup: bool = True)
     # 1. Reset reviewed_history.json
     with open(HISTORY_PATH, "w", encoding="utf-8") as f:
         json.dump({}, f, indent=2)
-    print("✅ Reset data/reviewed_history.json -> {} (45-day review cooldown cleared)")
+    print("✅ Reset data/reviewed_history.json -> {} (7-day review cooldown cleared)")
 
     # 2. Reset dispatched_alerts.json
     with open(DISPATCH_PATH, "w", encoding="utf-8") as f:

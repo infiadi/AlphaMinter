@@ -224,7 +224,7 @@ AlphaMinter/
 ├── data/
 │   ├── cache/                         # 6H cache for screens and dossiers
 │   ├── prepared_queues/               # Auto-generated batches for subagents
-│   └── reviewed_history.json          # 45-day atomic review cooldown ledger
+│   └── reviewed_history.json          # 7-day atomic review cooldown ledger
 ├── logs/
 │   ├── screener_audit_YYYY-MM-DD.jsonl # Machine-readable audit trails
 │   └── screener_audit_YYYY-MM-DD.md   # Full institutional dossiers

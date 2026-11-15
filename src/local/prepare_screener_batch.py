@@ -55,7 +55,7 @@ def is_on_review_cooldown(
     symbol: str,
     current_screen_count: int,
     history: Dict[str, Any],
-    cooldown_days: int = 45
+    cooldown_days: int = 7
 ) -> Tuple[bool, str]:
     """
     Checks if stock was reviewed within cooldown_days:
@@ -734,7 +734,7 @@ def run_stage_1_prep(limit: Optional[int] = None, refresh_screens: bool = False)
     3. Merges screen hits into deduplicated candidates.
     4. Applies EquityFilter (NSE listed operating equities only).
     5. Applies Cloudflare D1 silenced list (PERMABAN + active DROP30).
-    6. Applies 45-day review cooldown from reviewed_history.json.
+    6. Applies 7-day review cooldown from reviewed_history.json.
     7. Prioritizes highest confluence (screen_count descending).
     8. Fetches full Screener tables for surviving tickers (up to limit if specified).
     9. Scores the 7 negative parameters.
@@ -752,7 +752,7 @@ def run_stage_1_prep(limit: Optional[int] = None, refresh_screens: bool = False)
 
     request_delay = float(settings.get("request_delay_sec", 2.0))
     max_pages = int(settings.get("max_pages_per_screen", 10))
-    cooldown_days = int(settings.get("review_cooldown_days", 45))
+    cooldown_days = int(settings.get("review_cooldown_days", 7))
     max_neg_flags = int(settings.get("max_negative_flags_allowed", 1))
 
     parser = CustomScreenerParser(request_delay_sec=request_delay)
@@ -822,7 +822,7 @@ def run_stage_1_prep(limit: Optional[int] = None, refresh_screens: bool = False)
             excluded_stats["d1_silenced"] += 1
             continue
 
-        # Check 3: 45-day Cooldown in reviewed_history.json
+        # Check 3: 7-day Cooldown in reviewed_history.json
         on_cooldown, cooldown_msg = is_on_review_cooldown(sym, cand["screen_count"], history, cooldown_days)
         if on_cooldown:
             logger.info(f"Excluding {sym}: {cooldown_msg}.")
@@ -834,7 +834,7 @@ def run_stage_1_prep(limit: Optional[int] = None, refresh_screens: bool = False)
     logger.info(
         f"Initial Gate Results: Surviving={len(surviving_initial_gate)} | "
         f"Excluded: Non-Equity={excluded_stats['non_equity']}, D1 Silenced={excluded_stats['d1_silenced']}, "
-        f"45D Cooldown={excluded_stats['cooldown']}"
+        f"{cooldown_days}D Cooldown={excluded_stats['cooldown']}"
     )
 
     # Step C: PASS 1 - Instant Screen-Level Quant Gate (0 network requests)
@@ -1213,7 +1213,7 @@ def run_stage_1_prep(limit: Optional[int] = None, refresh_screens: bool = False)
     print(f"2. Excluded by Baseline Gate: {excluded_stats['non_equity'] + excluded_stats['d1_silenced'] + excluded_stats['cooldown']}")
     print(f"   - Non-Operating Equities: {excluded_stats['non_equity']}")
     print(f"   - Silenced (Cloudflare D1 Permaban/Drop): {excluded_stats['d1_silenced']}")
-    print(f"   - 45-Day Review Cooldown: {excluded_stats['cooldown']}")
+    print(f"   - {cooldown_days}-Day Review Cooldown: {excluded_stats['cooldown']}")
     print(f"3. Surviving Initial Gate: {len(surviving_initial_gate)}")
     print(f"4. Screen-Level Table Rejections (0 Net Calls): {len(rejected_candidates) - (len(candidates_to_fetch) - len(qualified_candidates))}")
     print(f"5. Candidates Audited via Deep Dossier: {len(candidates_to_fetch)}")

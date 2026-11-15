@@ -43,7 +43,7 @@ STCG_TAX_RATE = float(os.getenv("STCG_TAX_RATE", "0.20"))  # 20% STCG on Tender 
 
 # Market Cap & Governance Sanity Thresholds
 MIN_MARKET_CAP_CR = float(os.getenv("MIN_MARKET_CAP_CR", "5000.0"))  # Strictly >= ₹5,000 Crore Market Cap
-GUIDANCE_COOLDOWN_DAYS = int(os.getenv("GUIDANCE_COOLDOWN_DAYS", "45"))  # Multi-day cooldown per stock
+GUIDANCE_COOLDOWN_DAYS = int(os.getenv("GUIDANCE_COOLDOWN_DAYS", "7"))  # Multi-day cooldown per stock
 
 # Request Headers
 NSE_HEADERS = {

@@ -84,6 +84,18 @@ def build_analyst_prompt(candidate: Dict[str, Any]) -> str:
     b_trend = b_data.get("eps_trend_30d") or "Stable / unguided"
     b_news = "\n".join([f"  * {hl}" for hl in b_data.get("recent_news", [])]) if b_data.get("recent_news") else "  * None available"
 
+    # Direct Industry Peers
+    peers = dossier.get("peers", [])
+    if peers:
+        peer_lines = [f"  * {p['name']}: CMP ₹{p['cmp']} | P/E: {p['pe']}x | M.Cap: ₹{p['mcap_cr']} Cr | ROCE: {p['roce']}%" for p in peers[:3]]
+        peers_str = "\n".join(peer_lines)
+    else:
+        peers_str = "  * None available"
+
+    ts = tech.get("trade_setup", {})
+    entry_zone_str = ts.get("entry_zone", "N/A")
+    stop_loss_str = ts.get("stop_loss", "N/A")
+
     prompt = f"""You are analyzing candidate stock {sym} ({name}).
 Evaluate this single stock using its pre-prepared quantitative dossier below.
 Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
@@ -97,6 +109,9 @@ Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
 - Valuation & Quality (Screener): Stock P/E: {metrics.get('pe', top_ratios.get('Stock P/E', 'N/A'))}x | ROCE: {metrics.get('roce_pct', top_ratios.get('ROCE', 'N/A'))}% | ROE: {metrics.get('roe_pct', top_ratios.get('ROE', 'N/A'))}%
 - Forward Valuation & Consensus (yFinance): Street Target: {b_target} | Forward P/E: {b_fwd_pe} | Forward EPS: {b_fwd_eps} | EV/EBITDA: {b_ev_ebitda}
 - Institutional Revisions & Trajectory: 30D EPS Revisions: {b_revisions} | 30D EPS Drift: {b_trend}
+- Direct Industry Peers (Screener):
+{peers_str}
+- Technical Trade Setup: Ideal Dip-Buy Zone: {entry_zone_str} | Structural Stop-Loss: {stop_loss_str}
 - Recent News & Concall Summaries:
 {b_news}
 - Cash Conversion: 3Y CFO / PAT: {metrics.get('cfo_to_pat_3y', 'N/A')}x | 3Y CFO / EBITDA: {metrics.get('cfo_to_ebitda_3y', 'N/A')}x
@@ -112,16 +127,17 @@ Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
 - Review Context: {review_reason if needs_review else 'Standard quant qualification'}
 
 ### STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE PROTOCOL:
-1. SECTOR LIFECYCLE (Sunrise vs. Sunset vs. Contra Bet):
+1. SECTOR LIFECYCLE (Sunrise vs. Sunset vs. Contra Bet vs. Deep Value):
    - Quant screens already filter past growth (3Y sales/profit > 20%, ROCE > 20%, PEG < 2).
    - Your primary job is to evaluate FUTURE GROWTH VISIBILITY for FY27-FY29:
      * SUNRISE_SECTOR: Expanding TAM (>18-25% CAGR), multi-year tailwinds (Power T&D, Defense, EMS, Renewable/BESS, Data Centers, CDMO, Quick Commerce). High conviction candidates.
-     * CONTRA_BET (e.g. IT services facing AI threat / discretionary cuts, or Agrochem destocking): Valuations are at all-time lows (2020 price levels), BUT future growth phase is UNCERTAIN. MANDATORY RULE: Contra bets CANNOT be STRONG_BUY_WATCH! Unless there is verifiable proof in recent concalls that revenue growth has bottomed and re-accelerated, CLASSIFY AS HOLD_WATCH (Contra Watchlist).
+     * CONTRA_BET (e.g. IT services facing AI threat / discretionary cuts, or Agrochem destocking): Valuations are at all-time lows, BUT future growth phase is UNCERTAIN. Must wait on HOLD_WATCH unless verifiable proof of turnaround.
+     * DEEP-VALUE FRANCHISE MISPRICING: If a stock is trading at a deep drawdown (>40% from ATH) but has stellar unit economics (ROA > 5%, ROE > 15%, pristine balance sheet e.g. Aptus Value Housing) and sell-side consensus confirms BUY with Forward P/E < 15x: DO NOT PENALIZE as a broken trap! Classify as PE_RERATING or EARNINGS_COMPOUNDER and award ACCUMULATE_ON_DIP.
      * CYCLICAL_INFLECTION: Upcoming capex coming online in FY26-FY28 backed by firm order book.
      * SUNSET_STAGNANT: Low volume growth (<8%), commoditized price-taker, moat decay. Mandatory REJECT or HOLD_WATCH.
 2. FORWARD GROWTH PHASE AUDIT (FY27-FY29 Visibility):
    - Check concall and broker reports for: executable order book (2x-3x revenue), capacity commissioning dates, margin durability.
-   - Cross-check Street consensus Forward P/E and EPS revisions: Are analysts revising estimates UP or DOWN? If revisions are negative or declining, stress-test why.
+   - Cross-check Street consensus Forward P/E and EPS revisions: Are analysts revising estimates UP or DOWN?
    - Is future growth accelerating or plateauing?
 3. ANTI-DERATING & FORWARD PEG GATE:
    - Calculate Forward PEG = Current P/E / Forward Guided EPS Growth %.
@@ -130,8 +146,8 @@ Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
 4. RUTHLESS INSTITUTIONAL SELECTIVITY:
    - Target approval rate: Only 10-15% of candidates (2-4 stocks out of 25-30) should ever be approved!
    - STRONG_BUY_WATCH: Conviction 8.5-10.0, Sunrise Sector / Capex Inflection, verified forward growth >= 20%, Forward PEG <= 1.8x, Net CAGR >= 25%.
-   - ACCUMULATE_ON_DIP: Conviction 7.5-8.4, growing sector, solid moat, forward growth >= 16%, pullbacks elevate return to >=25%.
-   - HOLD_WATCH: Conviction 5.0-7.4. All Contra Bets (IT with AI threat), mature plateaus, or unguided stocks. (Excluded from Telegram alerts).
+   - ACCUMULATE_ON_DIP: Conviction 7.5-8.4, growing sector or deep-value franchise mispricing, solid moat, forward growth >= 16%, pullbacks elevate return to >=25%.
+   - HOLD_WATCH: Conviction 5.0-7.4. All structural traps, mature plateaus, or unguided stocks. (Excluded from Telegram alerts).
    - REJECT: Conviction 1.0-4.9. Disrupted sectors, growth traps, governance flags. (Excluded from Telegram alerts).
 
 CRITICAL: Return ONLY a valid, compact JSON object matching this schema. No introductory text, no conversational filler, no markdown report text.
@@ -147,8 +163,10 @@ CRITICAL: Return ONLY a valid, compact JSON object matching this schema. No intr
   "cagr_breakdown": "Forward EPS growth 24% - Multiple derating drag 3% = Net 21% CAGR",
   "margin_of_safety": "High|Moderate|Low with brief justification",
   "why_picked": "Specific structural catalyst, moat, and market share driver in a sunrise sector",
+  "concall_key_takeaways": "2-3 bullet points: Management commitments on FY26-FY28 revenue targets, capacity commissioning dates, and margin guidance",
+  "peer_comparison_verdict": "How this stock compares to top industry peers on P/E, ROCE, and valuation discount",
   "forward_growth_catalysts": "Concrete forward visibility: Upcoming capacity commissioning dates, order book executable timeline, or market-share expansion",
-  "sector_and_contra_analysis": "Explicit evaluation of whether sector is Sunrise vs Sunset, and if a Contra Bet (e.g. IT with AI threat), why it is either ready or must wait on HOLD_WATCH",
+  "sector_and_contra_analysis": "Explicit evaluation of whether sector is Sunrise vs Sunset, and if a deep-value mispricing, why unit economics justify rerating",
   "forward_guidance_vs_pe": "FY27/FY28 guided growth % vs current P/E (Forward PEG: X.Xx). Concall analyst scrutiny summary.",
   "derating_risk_floor_pe": "Multiple compression downside if growth decelerates: 5Y median P/E and valuation floor",
   "bear_risks": "Summary of forensic risks, balance sheet/working capital, and cyclical headwinds",
@@ -415,6 +433,10 @@ async def run_pipeline():
                 },
                 "why_picked": why_picked,
                 "thesis": thesis,
+                "concall_key_takeaways": parsed.get("concall_key_takeaways", ""),
+                "peer_comparison_verdict": parsed.get("peer_comparison_verdict", ""),
+                "peers": dossier.get("peers", []),
+                "trade_setup": tech.get("trade_setup", {}),
                 "forward_growth_catalysts": forward_growth_catalysts,
                 "sector_and_contra_analysis": sector_contra,
                 "forward_guidance_vs_pe": forward_guidance,

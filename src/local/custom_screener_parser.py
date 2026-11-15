@@ -434,6 +434,33 @@ class CustomScreenerParser:
         sector = market_links[0] if len(market_links) > 0 else "Unknown"
         industry = market_links[-1] if len(market_links) > 1 else sector
 
+        # 2b. Peer Comparison Table (from Screener API)
+        peers_list = []
+        try:
+            m_wid = re.search(r'data-warehouse-id="(\d+)"', str(soup))
+            if m_wid:
+                wid = m_wid.group(1)
+                peers_url = f"https://www.screener.in/api/company/{wid}/peers/"
+                p_resp = self._request_with_retry(peers_url)
+                if p_resp and p_resp.status_code == 200:
+                    p_soup = BeautifulSoup(p_resp.text, "html.parser")
+                    p_tbl = p_soup.find("table")
+                    if p_tbl:
+                        for tr in p_tbl.find_all("tr")[1:5]:
+                            cells = [td.get_text(strip=True) for td in tr.find_all(["td", "th"])]
+                            if len(cells) >= 12:
+                                p_name = cells[1]
+                                if p_name.lower() != company_name.lower():
+                                    peers_list.append({
+                                        "name": p_name,
+                                        "cmp": cells[2],
+                                        "pe": cells[8],
+                                        "mcap_cr": cells[10],
+                                        "roce": cells[11]
+                                    })
+        except Exception as e:
+            logger.debug(f"Error extracting peers for {symbol}: {e}")
+
         # 3. Top Ratios
         top_ratios: Dict[str, Any] = {}
         top_ul = soup.find(id="top-ratios")
@@ -520,6 +547,7 @@ class CustomScreenerParser:
             "is_consolidated": is_consolidated,
             "sector": sector,
             "industry": industry,
+            "peers": peers_list,
             "top_ratios": top_ratios,
             "pros": pros,
             "cons": cons,

@@ -209,6 +209,41 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
 
     broker_section += "\n"
 
+    # 1. Actionable Trade Setup & Risk/Reward
+    ts = record.get("trade_setup") or {}
+    entry_zone = ts.get("entry_zone")
+    stop_loss = ts.get("stop_loss")
+    risk_pct = ts.get("risk_pct", 8.0)
+    upside_pct = broker_data.get("upside_pct") or 25.0
+    rr_ratio = round(max(upside_pct, 10.0) / max(float(risk_pct), 1.0), 1)
+
+    trade_section = ""
+    if entry_zone and stop_loss:
+        trade_section = (
+            f"<b>🎯 Actionable Entry Zone & Risk/Reward:</b>\n"
+            f"• 📥 <b>Ideal Buy Zone:</b> <b>{entry_zone}</b>\n"
+            f"• 🛑 <b>Structural Stop-Loss:</b> <b>{stop_loss}</b>\n"
+            f"• ⚖️ <b>Risk:Reward Ratio:</b> <b>{rr_ratio}:1</b> (Target: <code>+{upside_pct:.1f}%</code> vs Risk: <code>-{risk_pct:.1f}%</code>)\n\n"
+        )
+
+    # 2. Peer Relative Valuation Matrix
+    peers = record.get("peers") or []
+    peer_section = ""
+    if peers:
+        p_lines = []
+        for p in peers[:3]:
+            p_lines.append(f"• <b>{safe_html(p.get('name'))}:</b> P/E: <b>{p.get('pe')}x</b> | ROCE: <b>{p.get('roce')}%</b> | M.Cap: ₹{p.get('mcap_cr')} Cr")
+        peer_verdict = record.get("peer_comparison_verdict")
+        if peer_verdict:
+            p_lines.append(f"• <i>{safe_html(peer_verdict)}</i>")
+        peer_section = f"<b>👥 Peer Relative Valuation Matrix:</b>\n" + "\n".join(p_lines) + "\n\n"
+
+    # 3. Concall Key Takeaways
+    concall_notes = record.get("concall_key_takeaways")
+    concall_section = ""
+    if concall_notes:
+        concall_section = f"<b>🎙️ Concall Key Takeaways & Guidance:</b>\n<i>{safe_html(concall_notes)}</i>\n\n"
+
     msg = (
         f"{title}\n\n"
         f"<b>Company:</b> <code>{safe_html(symbol)}</code> ({safe_html(name)})\n"
@@ -223,6 +258,9 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
         f"• ROCE: <b>{roce_str}</b> | 3Y CFO/PAT: <b>{cfo_pat_str}</b> | D/E: <b>{de_str}</b>\n"
         f"• 3Y Sales CAGR: <b>{sales_growth_str}</b> | 3Y PAT CAGR: <b>{pat_growth_str}</b>\n\n"
         f"{broker_section}"
+        f"{trade_section}"
+        f"{peer_section}"
+        f"{concall_section}"
         f"<b>🌅 Sector Dynamics & Tailwinds:</b>\n"
         f"<i>{safe_html(sector_contra)}</i>\n\n"
         f"<b>🚀 Future Growth Drivers (FY27–FY29):</b>\n"

@@ -571,6 +571,27 @@ def fetch_technofundamental_batch(symbols: List[str]) -> Dict[str, Dict[str, Any
             if mansfield_rs is not None:
                 summary += f" | Mansfield RS (50D): {mansfield_rs:+.2f}%"
 
+            # Calculate Actionable Entry Zone & Structural Stop-Loss
+            if stage == "STAGE_2_UPTREND":
+                entry_low = round(min(ema50, cmp * 0.96), 1)
+                entry_high = round(min(cmp, max(ema20, ema50 * 1.02)), 1)
+                stop_loss = round(ema200 * 0.97 if ema200 and cmp > ema200 else ema50 * 0.95, 1)
+            elif stage == "STAGE_4_DOWNTREND":
+                entry_low = round(cmp * 0.95, 1)
+                entry_high = round(cmp * 1.01, 1)
+                stop_loss = round(cmp * 0.90, 1)
+            else:
+                entry_low = round(min(ema20 * 0.98, cmp * 0.97), 1)
+                entry_high = round(cmp * 1.01, 1)
+                stop_loss = round(ema200 * 0.96 if ema200 and cmp > ema200 else cmp * 0.92, 1)
+
+            risk_pct = round(((cmp - stop_loss) / cmp) * 100.0, 1) if cmp > stop_loss else 5.0
+            trade_setup = {
+                "entry_zone": f"₹{entry_low:,.1f} – ₹{entry_high:,.1f}",
+                "stop_loss": f"₹{stop_loss:,.1f} (-{risk_pct}%)",
+                "risk_pct": risk_pct
+            }
+
             results[sym] = {
                 "trend_stage": stage,
                 "mansfield_rs_50d": mansfield_rs,
@@ -579,6 +600,7 @@ def fetch_technofundamental_batch(symbols: List[str]) -> Dict[str, Dict[str, Any
                 "ema50": round(ema50, 1),
                 "ema200": round(ema200, 1) if ema200 else None,
                 "ema200_rising": ema200_rising,
+                "trade_setup": trade_setup,
                 "technical_summary": summary
             }
         except Exception as e:

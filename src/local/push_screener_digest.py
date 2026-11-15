@@ -314,6 +314,62 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
     return msg, markup
 
 
+def format_cheat_sheet_summary(picks_with_rank: List[Tuple[Dict[str, Any], int]], date_str: str) -> str:
+    """
+    Builds the executive reference cheat sheet table grouped by category:
+    Category -> Stock Name : P/E : Forward P/E : Upside Potential % : Target CAGR
+    """
+    strong_buys = [r for r, _ in picks_with_rank if str(r.get("verdict")).upper() == "STRONG_BUY_WATCH"]
+    accumulates = [r for r, _ in picks_with_rank if str(r.get("verdict")).upper() == "ACCUMULATE_ON_DIP"]
+
+    lines = [
+        f"📊 <b>AlphaMinter Approved Candidates Cheat Sheet ({date_str})</b>",
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    ]
+
+    def format_row(r: Dict[str, Any]) -> str:
+        sym = r.get("symbol", "").upper()
+        name = r.get("name", sym)
+        metrics = r.get("metrics", {})
+        pe = metrics.get("pe")
+        pe_str = f"{pe:.1f}x" if isinstance(pe, (int, float)) else "N/A"
+        cagr = r.get("expected_cagr_3y") or "20%+"
+
+        b_data = fetch_brokerage_consensus(sym)
+        fwd_pe = b_data.get("forward_pe")
+        fwd_pe_str = f"{fwd_pe:.1f}x" if isinstance(fwd_pe, (int, float)) else "N/A"
+        upside = b_data.get("upside_pct")
+        if upside is not None:
+            up_sign = "+" if upside > 0 else ""
+            target_p = b_data.get("target_median")
+            t_str = f" (₹{target_p:,.0f})" if target_p else ""
+            upside_str = f"{up_sign}{upside:.1f}%{t_str}"
+        else:
+            upside_str = "+40%+ (Pure Alpha)"
+
+        pathway = clamp_text(r.get("alpha_pathway") or r.get("why_picked") or "Compounder", 45)
+
+        return (
+            f"• <code>{safe_html(sym)}</code> <b>{safe_html(name)}</b>\n"
+            f"  P/E: <b>{pe_str}</b> | Fwd P/E: <b>{fwd_pe_str}</b> | Upside: <b>{safe_html(upside_str)}</b>\n"
+            f"  3Y Target CAGR: <b>{safe_html(cagr)}</b> | <i>{safe_html(pathway)}</i>"
+        )
+
+    if strong_buys:
+        lines.append(f"🔥 <b>STRONG BUY WATCH (Conviction ≥ 8.5/10)</b>\n")
+        for r in strong_buys:
+            lines.append(format_row(r) + "\n")
+        lines.append(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+
+    if accumulates:
+        lines.append(f"🎯 <b>ACCUMULATE ON DIP (Conviction 7.5–8.4/10)</b>\n")
+        for r in accumulates:
+            lines.append(format_row(r) + "\n")
+        lines.append(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+    return "\n".join(lines)
+
+
 def push_screener_digest(
     date_str: Optional[str] = None,
     target_symbols: Optional[List[str]] = None,
@@ -433,6 +489,10 @@ def push_screener_digest(
         f"⚡ <i>Delivering all {total_picks} approved pick(s) below. The #1 Top Pick is sent last to appear right at the bottom of your chat!</i>"
     )
     dispatcher.send_message(summary_text)
+
+    # 2. Send Executive Category Reference Cheat Sheet
+    cheat_sheet_text = format_cheat_sheet_summary(picks_with_rank, now_dt.strftime('%Y-%m-%d'))
+    dispatcher.send_message(cheat_sheet_text)
 
     # 2. Telegram chat ordering: User requested the best/strongest candidates sit at the BOTTOM of chat.
     # In Telegram, newest messages append chronologically at the bottom.

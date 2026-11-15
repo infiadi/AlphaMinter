@@ -1,0 +1,210 @@
+{
+  "GRSE": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "POLYCAB": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "KPITTECH": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "HAVELLS": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "KEI": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "VBL": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "TORNTPOWER": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "OIL": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "ITC": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 9
+  },
+  "SUZLON": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "MAZDOCK": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "FIVESTAR": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 9
+  },
+  "SBICARD": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 9
+  },
+  "GILLETTE": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 9
+  },
+  "NESTLEIND": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "WAAREERTL": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 8
+  },
+  "PAGEIND": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 8.5
+  },
+  "IEX": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 8
+  },
+  "INFY": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 8
+  },
+  "MARUTI": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "AXISBANK": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "SBIN": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "CAMS": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "WAAREEENER": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "ECLERX": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "PREMIERENE": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "WELCORP": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 8
+  },
+  "NTPC": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "TRANSRAILL": {
+    "dispatched_at": "2026-11-15T16:56:45.440520",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8.2,
+    "rank": 1
+  },
+  "ACE": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "SHARDACROP": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 8
+  },
+  "BLS": {
+    "dispatched_at": "2026-11-15T16:56:45.440520",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8.2,
+    "rank": 2
+  },
+  "KIRLPNU": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "RRKABEL": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 9
+  },
+  "POWERMECH": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "BIKAJI": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "GALLANTT": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  },
+  "SARDAEN": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8
+  },
+  "POWERICA": {
+    "dispatched_at": "2026-11-15T16:56:45.440520",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 8.0,
+    "rank": 3
+  },
+  "APTUS": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "STRONG_BUY_WATCH",
+    "conviction_score": 8
+  },
+  "JKCEMENT": {
+    "dispatched_at": "2026-11-15T16:15:00",
+    "verdict": "ACCUMULATE_ON_DIP",
+    "conviction_score": 7
+  }
+}

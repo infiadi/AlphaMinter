@@ -2,8 +2,8 @@ name: 5. 20%+ Management Guidance Scanner (Gemini AI)
 
 on:
   schedule:
-    # 14:00 UTC = 7:30 PM IST (Monday through Friday)
-    - cron: '0 14 * * 1-5'
+    # 14:00 UTC = 7:30 PM IST (Daily: Monday through Sunday)
+    - cron: '0 14 * * *'
   workflow_dispatch:
 
 jobs:

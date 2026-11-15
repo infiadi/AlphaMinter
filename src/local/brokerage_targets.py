@@ -1,8 +1,26 @@
 import logging
+import requests
 from typing import Dict, Any, Optional, List
-import yfinance as yf
+
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
 
 logger = logging.getLogger("brokerage_targets")
+
+_http_session = None
+
+
+def get_yfinance_session() -> requests.Session:
+    """Returns a pooled requests.Session to force HTTP/1.1 and avoid curl_cffi HTTP2 framing errors."""
+    global _http_session
+    if _http_session is None:
+        _http_session = requests.Session()
+        _http_session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        })
+    return _http_session
 
 
 def fetch_brokerage_consensus(symbol: str) -> Dict[str, Any]:
@@ -34,13 +52,17 @@ def fetch_brokerage_consensus(symbol: str) -> Dict[str, Any]:
         "yahoo_url": f"https://finance.yahoo.com/quote/{clean_sym}.NS"
     }
 
+    if yf is None:
+        return data
+
     ticker_keys = [f"{clean_sym}.NS", f"{clean_sym}.BO"]
     t_obj = None
     info = None
 
+    session = get_yfinance_session()
     for tk in ticker_keys:
         try:
-            candidate_t = yf.Ticker(tk)
+            candidate_t = yf.Ticker(tk, session=session)
             fetched_info = candidate_t.info
             # Verify valid data returned
             if fetched_info and (fetched_info.get("targetMeanPrice") or fetched_info.get("currentPrice") or fetched_info.get("regularMarketPrice")):

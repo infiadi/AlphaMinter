@@ -14,10 +14,25 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
+# Ensure project root is in sys.path
+PROJECT_ROOT = Path("c:/Users/amits/OneDrive/Documents/MoneyMinter/AlphaMinter").resolve()
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# Ensure user site-packages are accessible
+user_sites = [
+    r"C:\Users\amits\AppData\Local\Programs\Python\Python313\Lib\site-packages",
+    r"C:\Users\amits\AppData\Local\Programs\Python\Python312\Lib\site-packages",
+    r"C:\Users\amits\AppData\Local\Programs\Python\Python311\Lib\site-packages"
+]
+for p in user_sites:
+    if Path(p).exists() and p not in sys.path:
+        sys.path.append(p)
+
 from src.local.brokerage_targets import fetch_brokerage_consensus
 
 # Set up project paths
-BASE_DIR = Path.cwd()
+BASE_DIR = PROJECT_ROOT
 LOGS_DIR = BASE_DIR / "logs"
 DATA_DIR = BASE_DIR / "data"
 QUEUES_DIR = DATA_DIR / "prepared_queues"
@@ -316,6 +331,7 @@ async def run_pipeline():
         capture_output=True,
         text=True,
         check=False,
+        cwd=str(BASE_DIR),
         env=env
     )
     log(prep_proc.stdout)
@@ -401,6 +417,7 @@ async def run_pipeline():
             screens = cand_item.get("matched_screens", [])
             screen_count = cand_item.get("screen_count", len(screens))
             flags = cand_item.get("negative_flags", [])
+            tech = cand_item.get("technicals", {})
 
             verdict = parsed["verdict"]
             conviction = parsed.get("conviction_score", 8.0)
@@ -483,12 +500,19 @@ async def run_pipeline():
             mcap_fmt = f"₹{mcap_val:,.0f} Cr" if isinstance(mcap_val, (int, float)) else str(mcap_val)
             flags_fmt = ", ".join(flags) if flags else "None - Clean quant profile"
 
+            trade_setup = parsed.get("actionable_trade_setup", {})
+            entry_strat = trade_setup.get("entry_strategy", "N/A")
+            entry_zone = trade_setup.get("entry_zone", "N/A")
+            stop_loss = trade_setup.get("invalidation_stop_loss", "N/A")
+            rr_ratio = trade_setup.get("risk_reward_ratio", "N/A")
+
             md_block = f"""### [{verdict}] {sym} - {cand_item.get('name', sym)}
 - **Date**: {today_str}
 - **Conviction Score**: {conviction}/10 | **Alpha Pathway**: {pathway}
 - **Sector Lifecycle**: {sector_class} | **Future Growth Phase**: {growth_phase}
 - **Expected 3Y CAGR**: {expected_cagr} (Return Math: {cagr_breakdown})
 - **Margin of Safety**: {margin_of_safety}
+- **Actionable Setup**: {entry_strat} | **Zone**: {entry_zone} | **Stop**: {stop_loss} | **R:R**: {rr_ratio}
 - **Matched Screens**: {', '.join(screens)} (Hits: {screen_count})
 - **Warning Flags**: {flags_fmt}
 - **Key Metrics**: CMP: {cmp_fmt} | P/E: {pe_val}x | M.Cap: {mcap_fmt} | ROCE: {roce_val}% | 3Y CFO/PAT: {cfo_pat_val}x
@@ -542,6 +566,7 @@ async def run_pipeline():
         capture_output=True,
         text=True,
         check=False,
+        cwd=str(BASE_DIR),
         env=env
     )
     log(push_proc.stdout)

@@ -1,0 +1,1227 @@
+{
+  "GRSE": {
+    "last_reviewed_at": "2026-11-15T03:41:42.658265",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "market_cap_cr": 25027.0,
+      "current_price": 2185.0,
+      "pe": 30.6,
+      "roce_pct": 42.8,
+      "roe_pct": 31.6,
+      "cfo_to_pat_3y": -0.47,
+      "debt_to_equity": 0.01,
+      "sales_growth_3y": 40.0,
+      "profit_growth_3y": 50.0
+    }
+  },
+  "POLYCAB": {
+    "last_reviewed_at": "2026-11-15T03:58:00Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Super High Growth Companies in Long Term",
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 119121.0,
+      "current_price": 7904.0,
+      "pe": 37.7,
+      "roce_pct": 33.2,
+      "roe_pct": 23.6,
+      "cfo_to_pat_3y": 0.87,
+      "debt_to_equity": 0.02,
+      "sales_growth_3y": 27.0,
+      "profit_growth_3y": 29.0
+    }
+  },
+  "KPITTECH": {
+    "last_reviewed_at": "2026-11-15T04:02:00Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "market_cap_cr": 15133.0,
+      "current_price": 552.0,
+      "pe": 26.3,
+      "roce_pct": 26.3,
+      "roe_pct": 20.9,
+      "cfo_to_pat_3y": 1.78,
+      "debt_to_equity": 0.21,
+      "sales_growth_3y": 24.0,
+      "profit_growth_3y": 21.0
+    }
+  },
+  "HAVELLS": {
+    "last_reviewed_at": "2026-11-15T04:05:00Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 72867.0,
+      "current_price": 1161.0,
+      "pe": 42.9,
+      "roce_pct": 24.9,
+      "roe_pct": 19.0,
+      "cfo_to_pat_3y": 1.05,
+      "debt_to_equity": 0.02,
+      "sales_growth_3y": 10.0,
+      "profit_growth_3y": 16.0
+    }
+  },
+  "KEI": {
+    "last_reviewed_at": "2026-11-15T04:06:00Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "market_cap_cr": 38641.0,
+      "current_price": 4040.0,
+      "pe": 36.6,
+      "roce_pct": 20.0,
+      "roe_pct": 14.7,
+      "cfo_to_pat_3y": 0.53,
+      "debt_to_equity": 0.05,
+      "sales_growth_3y": 19.0,
+      "profit_growth_3y": 24.0
+    }
+  },
+  "VBL": {
+    "last_reviewed_at": "2026-11-15T04:08:00Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Super High Growth Companies in Long Term",
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 146394.0,
+      "current_price": 433.0,
+      "pe": 42.3,
+      "roce_pct": 19.7,
+      "roe_pct": 16.4,
+      "cfo_to_pat_3y": 1.01,
+      "debt_to_equity": 0.13,
+      "sales_growth_3y": 18.0,
+      "profit_growth_3y": 25.0
+    }
+  },
+  "TORNTPOWER": {
+    "last_reviewed_at": "2026-11-15T04:10:00Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 61527.0,
+      "current_price": 1221.0,
+      "pe": 25.4,
+      "roce_pct": 13.7,
+      "roe_pct": 12.8,
+      "cfo_to_pat_3y": 1.81,
+      "debt_to_equity": 1.11,
+      "sales_growth_3y": 4.0,
+      "profit_growth_3y": 4.0
+    }
+  },
+  "OIL": {
+    "last_reviewed_at": "2026-11-15T04:15:00Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 71815.0,
+      "current_price": 442.0,
+      "pe": 7.78,
+      "roce_pct": 11.5,
+      "roe_pct": 12.2,
+      "cfo_to_pat_3y": 1.32,
+      "debt_to_equity": 0.65,
+      "sales_growth_3y": -3.0,
+      "profit_growth_3y": -9.0
+    }
+  },
+  "ITC": {
+    "last_reviewed_at": "2026-11-15T04:42:54.854848",
+    "screen_count": 1,
+    "verdict": "STRONG_BUY_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 357160.0,
+      "current_price": 285.0,
+      "pe": 18.9,
+      "roce_pct": 38.9,
+      "roe_pct": 29.3,
+      "cfo_to_pat_3y": 0.71,
+      "cfo_to_ebitda_3y": 0.68,
+      "debt_to_equity": 0.01,
+      "qoq_opm_delta_bps": 100.0,
+      "latest_qtr_yoy_opm_bps": -600.0,
+      "latest_qtr_yoy_sales_pct": 3.93,
+      "latest_qtr_yoy_pat_pct": -18.47,
+      "promoter_pledge_pct": 0.0,
+      "promoter_qoq_change_pct": null,
+      "is_financial_sector": false
+    }
+  },
+  "SUZLON": {
+    "last_reviewed_at": "2026-11-14T23:25:56.602026Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "current_price": 38.25,
+      "pe": 23.09,
+      "market_cap_cr": 52159.13,
+      "roce_pct": 34.15,
+      "roe_pct": 39.67,
+      "cfo_to_pat_3y": 0.32,
+      "debt_to_equity": 0.07,
+      "sales_growth_3y": 40.99,
+      "profit_growth_3y": 162.85
+    }
+  },
+  "MAZDOCK": {
+    "last_reviewed_at": "2026-11-14T23:25:56.602050Z",
+    "screen_count": 2,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "current_price": 1890.0,
+      "pe": 31.09,
+      "market_cap_cr": 76238.82,
+      "roce_pct": 35.98,
+      "roe_pct": 29.18,
+      "cfo_to_pat_3y": 0.02,
+      "debt_to_equity": 0.08,
+      "sales_growth_3y": 18.44,
+      "profit_growth_3y": 32.16
+    }
+  },
+  "GODFRYPHLP": {
+    "last_reviewed_at": "2026-11-14T23:25:56.602056Z",
+    "screen_count": 2,
+    "verdict": "REJECT",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "current_price": 1807.0,
+      "pe": 22.5,
+      "market_cap_cr": 28186.0,
+      "roce_pct": 30.2,
+      "roe_pct": 24.5,
+      "cfo_to_pat_3y": 0.24,
+      "debt_to_equity": 0.04,
+      "sales_growth_3y": 25.1,
+      "profit_growth_3y": 33.7
+    }
+  },
+  "FIVESTAR": {
+    "last_reviewed_at": "2026-11-14T23:25:56.602061Z",
+    "screen_count": 2,
+    "verdict": "STRONG_BUY_WATCH",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "current_price": 443.0,
+      "pe": 11.7,
+      "market_cap_cr": 13067.0,
+      "roce_pct": 14.79,
+      "roe_pct": 16.06,
+      "cfo_to_pat_3y": -7.38,
+      "debt_to_equity": 0.0,
+      "sales_growth_3y": 28.38,
+      "profit_growth_3y": 22.11,
+      "is_financial_sector": true
+    }
+  },
+  "SBICARD": {
+    "last_reviewed_at": "2026-11-14T23:25:56.602064Z",
+    "screen_count": 2,
+    "verdict": "STRONG_BUY_WATCH",
+    "matched_screens": [
+      "Midcap Opportunity",
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "current_price": 578.0,
+      "pe": 21.1,
+      "market_cap_cr": 55034.0,
+      "roce_pct": 10.1,
+      "roe_pct": 14.7,
+      "cmp_to_bv": 3.75,
+      "cfo_to_pat_3y": -1.09,
+      "debt_to_equity": 0.0,
+      "sales_growth_3y": 22.86,
+      "profit_growth_3y": 12.72,
+      "latest_qtr_yoy_pat_pct": 74.83,
+      "promoter_pledge_pct": 0.0,
+      "is_financial_sector": true
+    }
+  },
+  "GILLETTE": {
+    "last_reviewed_at": "2026-11-15T04:59:22.722550Z",
+    "screen_count": 1,
+    "verdict": "STRONG_BUY_WATCH",
+    "matched_screens": [
+      "Midcap Opportunity"
+    ],
+    "metrics": {
+      "current_price": 7247.0,
+      "pe": 34.6,
+      "market_cap_cr": 23618.0,
+      "roce_pct": 90.7,
+      "roe_pct": 66.5,
+      "cfo_to_pat_3y": 0.82,
+      "debt_to_equity": 0.0,
+      "sales_growth_3y": 11.2,
+      "profit_growth_3y": 31.3
+    }
+  },
+  "NESTLEIND": {
+    "last_reviewed_at": "2026-11-15T04:59:22.722573Z",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "current_price": 1263.0,
+      "pe": 61.3,
+      "market_cap_cr": 243585.0,
+      "roce_pct": 85.3,
+      "cfo_to_pat_3y": 1.13,
+      "debt_to_equity": 0.05,
+      "sales_growth_3y": 11.07,
+      "profit_growth_3y": 13.07
+    }
+  },
+  "WAAREERTL": {
+    "last_reviewed_at": "2026-11-15T16:45:27.487748",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "SUNRISE_SECTOR",
+    "future_growth_phase": "ACCELERATING_EXPANSION",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 7762.0,
+      "current_price": 744.0,
+      "pe": 16.7,
+      "roce_pct": 83.2,
+      "roe_pct": 68.6,
+      "cfo_to_pat_3y": 0.61,
+      "debt_to_equity": 1.33,
+      "sales_growth_3y": 112.0,
+      "profit_growth_3y": 105.0
+    }
+  },
+  "PAGEIND": {
+    "last_reviewed_at": "2026-11-15T04:59:22.722577Z",
+    "screen_count": 1,
+    "verdict": "STRONG_BUY_WATCH",
+    "matched_screens": [
+      "Midcap Opportunity"
+    ],
+    "metrics": {
+      "current_price": 31325.0,
+      "pe": 44.3,
+      "market_cap_cr": 34940.0,
+      "roce_pct": 64.4,
+      "roe_pct": 54.3,
+      "cfo_to_pat_3y": 1.36,
+      "debt_to_equity": 0.26,
+      "sales_growth_3y": 7.42,
+      "profit_growth_3y": 9.9
+    }
+  },
+  "IEX": {
+    "last_reviewed_at": "2026-11-15T04:59:22.722578Z",
+    "screen_count": 1,
+    "verdict": "STRONG_BUY_WATCH",
+    "matched_screens": [
+      "Midcap Opportunity"
+    ],
+    "metrics": {
+      "current_price": 116.4,
+      "pe": 20.81,
+      "market_cap_cr": 10378.0,
+      "roce_pct": 51.79,
+      "roe_pct": 39.4,
+      "cmp_to_bv": 8.04,
+      "cfo_to_pat_3y": 0.8,
+      "debt_to_equity": 0.01,
+      "sales_growth_3y": 14.28,
+      "profit_growth_3y": 17.51,
+      "dividend_yield_pct": 2.15,
+      "promoter_pledge_pct": 0.0,
+      "is_financial_sector": false
+    }
+  },
+  "INFY": {
+    "last_reviewed_at": "2026-11-15T13:42:18Z",
+    "screen_count": 1,
+    "verdict": "STRONG_BUY_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 463254.0,
+      "current_price": 1141.5,
+      "pe": 14.6,
+      "roce_pct": 40.0,
+      "roe_pct": 31.9,
+      "cfo_to_pat_3y": 1.09,
+      "debt_to_equity": 0.09,
+      "trend_stage": "STAGE_1_BASE"
+    }
+  },
+  "HINDUNILVR": {
+    "last_reviewed_at": "2026-11-15T13:46:00Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 468250.0,
+      "current_price": 1993.0,
+      "pe": 41.8,
+      "roce_pct": 28.4,
+      "roe_pct": 31.0,
+      "cfo_to_pat_3y": 0.94,
+      "debt_to_equity": 0.03,
+      "trend_stage": "STAGE_1_BASE"
+    }
+  },
+  "SUNPHARMA": {
+    "last_reviewed_at": "2026-11-15T13:48:45Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 451075.0,
+      "current_price": 1880.0,
+      "pe": 36.7,
+      "roce_pct": 20.5,
+      "roe_pct": 16.0,
+      "cfo_to_pat_3y": 1.15,
+      "debt_to_equity": 0.04,
+      "trend_stage": "STAGE_1_BASE"
+    }
+  },
+  "MARUTI": {
+    "last_reviewed_at": "2026-11-15T13:50:00Z",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 404133.0,
+      "current_price": 12854.0,
+      "pe": 30.0,
+      "roce_pct": 18.9,
+      "roe_pct": 14.3,
+      "cfo_to_pat_3y": 1.22,
+      "debt_to_equity": 0.0,
+      "trend_stage": "STAGE_1_BASE"
+    }
+  },
+  "RELIANCE": {
+    "last_reviewed_at": "2026-11-15T13:52:00Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 1812954.0,
+      "current_price": 1340.0,
+      "pe": 22.1,
+      "roce_pct": 10.3,
+      "roe_pct": 8.91,
+      "cfo_to_pat_3y": 1.94,
+      "debt_to_equity": 0.43,
+      "trend_stage": "STAGE_1_BASE"
+    }
+  },
+  "AXISBANK": {
+    "last_reviewed_at": "2026-11-15T13:53:00Z",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 414537.0,
+      "current_price": 1331.0,
+      "pe": 13.8,
+      "roce_pct": 6.24,
+      "roe_pct": 13.1,
+      "cfo_to_pat_3y": 0.36,
+      "debt_to_equity": 0.0,
+      "trend_stage": "STAGE_1_BASE"
+    }
+  },
+  "SBIN": {
+    "last_reviewed_at": "2026-11-15T13:54:00Z",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 996923.0,
+      "current_price": 1080.0,
+      "pe": 11.7,
+      "roce_pct": 6.13,
+      "roe_pct": 15.4,
+      "cfo_to_pat_3y": 0.4,
+      "debt_to_equity": 0.0,
+      "trend_stage": "STAGE_1_BASE"
+    }
+  },
+  "CAMS": {
+    "last_reviewed_at": "2026-11-15T15:15:00Z",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity"
+    ],
+    "metrics": {
+      "market_cap_cr": 18043.0,
+      "current_price": 726.0,
+      "pe": 35.3,
+      "roce_pct": 47.0,
+      "roe_pct": 37.4,
+      "cfo_to_pat_3y": 1.01,
+      "debt_to_equity": 0.04,
+      "sales_growth_3y": 16.0,
+      "profit_growth_3y": 19.0
+    }
+  },
+  "IRCTC": {
+    "last_reviewed_at": "2026-11-15T15:18:30Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Midcap Opportunity"
+    ],
+    "metrics": {
+      "market_cap_cr": 36616.0,
+      "current_price": 458.0,
+      "pe": 26.6,
+      "roce_pct": 46.1,
+      "roe_pct": 34.7,
+      "cfo_to_pat_3y": 0.74,
+      "debt_to_equity": 0.02,
+      "sales_growth_3y": 14.0,
+      "profit_growth_3y": 12.0
+    }
+  },
+  "HINDCOPPER": {
+    "last_reviewed_at": "2026-11-15T15:20:00Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Midcap Opportunity"
+    ],
+    "metrics": {
+      "market_cap_cr": 42535.0,
+      "current_price": 440.0,
+      "pe": 27.6,
+      "roce_pct": 42.4,
+      "roe_pct": 32.9,
+      "cfo_to_pat_3y": 0.83,
+      "debt_to_equity": 0.0,
+      "sales_growth_3y": 22.0,
+      "profit_growth_3y": 50.0
+    }
+  },
+  "WAAREEENER": {
+    "last_reviewed_at": "2026-11-15T16:45:27.489509",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "sector_classification": "SUNRISE_SECTOR",
+    "future_growth_phase": "ACCELERATING_EXPANSION",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 73236.0,
+      "current_price": 2546.0,
+      "pe": 18.8,
+      "roce_pct": 38.4,
+      "roe_pct": 32.5,
+      "cfo_to_pat_3y": 0.73,
+      "debt_to_equity": 0.33,
+      "sales_growth_3y": 58.0,
+      "profit_growth_3y": 99.0
+    }
+  },
+  "FORCEMOT": {
+    "last_reviewed_at": "2026-11-15T15:23:00Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "market_cap_cr": 25825.0,
+      "current_price": 19600.0,
+      "pe": 24.8,
+      "roce_pct": 36.0,
+      "roe_pct": 29.2,
+      "cfo_to_pat_3y": 1.2,
+      "debt_to_equity": 0.0,
+      "sales_growth_3y": 22.0,
+      "profit_growth_3y": 221.0
+    }
+  },
+  "ECLERX": {
+    "last_reviewed_at": "2026-11-15T16:45:27.490928",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CONTRA_BET",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 14844.0,
+      "current_price": 1578.0,
+      "pe": 20.4,
+      "roce_pct": 34.4,
+      "roe_pct": 28.6,
+      "cfo_to_pat_3y": 1.04,
+      "debt_to_equity": 0.18,
+      "sales_growth_3y": 16.0,
+      "profit_growth_3y": 13.0
+    }
+  },
+  "PREMIERENE": {
+    "last_reviewed_at": "2026-11-15T15:26:00Z",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Midcap Opportunity"
+    ],
+    "metrics": {
+      "market_cap_cr": 40670.0,
+      "current_price": 896.0,
+      "pe": 23.0,
+      "roce_pct": 32.7,
+      "roe_pct": 41.0,
+      "cfo_to_pat_3y": 0.64,
+      "debt_to_equity": 0.72,
+      "sales_growth_3y": 76.0,
+      "profit_growth_3y": 365.0
+    }
+  },
+  "TARIL": {
+    "last_reviewed_at": "2026-11-15T15:28:00Z",
+    "screen_count": 1,
+    "verdict": "REJECT",
+    "matched_screens": [
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "market_cap_cr": 9449.0,
+      "current_price": 315.0,
+      "pe": 31.0,
+      "roce_pct": 23.3,
+      "roe_pct": 19.1,
+      "cfo_to_pat_3y": 0.1,
+      "debt_to_equity": 0.35,
+      "sales_growth_3y": 22.0,
+      "profit_growth_3y": 87.0
+    }
+  },
+  "WELCORP": {
+    "last_reviewed_at": "2026-11-15T15:30:00Z",
+    "screen_count": 1,
+    "verdict": "STRONG_BUY_WATCH",
+    "matched_screens": [
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "market_cap_cr": 58836.0,
+      "current_price": 2230.0,
+      "pe": 24.8,
+      "roce_pct": 22.9,
+      "roe_pct": 19.4,
+      "cfo_to_pat_3y": 1.02,
+      "debt_to_equity": 0.1,
+      "sales_growth_3y": 20.0,
+      "profit_growth_3y": 119.0
+    }
+  },
+  "ONGC": {
+    "last_reviewed_at": "2026-11-15T15:32:00Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 283056.0,
+      "current_price": 225.0,
+      "pe": 5.69,
+      "roce_pct": 14.2,
+      "roe_pct": 11.6,
+      "cfo_to_pat_3y": 2.18,
+      "debt_to_equity": 0.46,
+      "sales_growth_3y": -1.0,
+      "profit_growth_3y": 1.0
+    }
+  },
+  "AIIL": {
+    "last_reviewed_at": "2026-11-15T15:35:00Z",
+    "screen_count": 1,
+    "verdict": "REJECT",
+    "matched_screens": [
+      "Super High Growth Companies in Long Term"
+    ],
+    "metrics": {
+      "market_cap_cr": 48979.0,
+      "current_price": 577.0,
+      "pe": 28.0,
+      "roce_pct": 13.3,
+      "roe_pct": 12.8,
+      "cfo_to_pat_3y": 0.64,
+      "debt_to_equity": 0.0,
+      "sales_growth_3y": 69.0,
+      "profit_growth_3y": 214.0
+    }
+  },
+  "ULTRACEMCO": {
+    "last_reviewed_at": "2026-11-15T15:37:00Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 356562.0,
+      "current_price": 12100.0,
+      "pe": 40.1,
+      "roce_pct": 12.7,
+      "roe_pct": 11.1,
+      "cfo_to_pat_3y": 1.6,
+      "debt_to_equity": 0.4,
+      "sales_growth_3y": 12.0,
+      "profit_growth_3y": 17.0
+    }
+  },
+  "TATASTEEL": {
+    "last_reviewed_at": "2026-11-15T15:37:00Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 233042.0,
+      "current_price": 187.0,
+      "pe": 19.6,
+      "roce_pct": 12.5,
+      "roe_pct": 11.7,
+      "cfo_to_pat_3y": 3.04,
+      "debt_to_equity": 0.99,
+      "sales_growth_3y": -2.0,
+      "profit_growth_3y": 10.0
+    }
+  },
+  "POWERGRID": {
+    "last_reviewed_at": "2026-11-15T15:38:00Z",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 239444.0,
+      "current_price": 257.0,
+      "pe": 14.8,
+      "roce_pct": 9.1,
+      "roe_pct": 15.3,
+      "cfo_to_pat_3y": 2.4,
+      "debt_to_equity": 1.42,
+      "sales_growth_3y": 1.0,
+      "profit_growth_3y": -2.0
+    }
+  },
+  "NTPC": {
+    "last_reviewed_at": "2026-11-15T15:39:30Z",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "matched_screens": [
+      "Bruised Bluechips"
+    ],
+    "metrics": {
+      "market_cap_cr": 309421.0,
+      "current_price": 319.0,
+      "pe": 10.4,
+      "roce_pct": 8.92,
+      "roe_pct": 15.1,
+      "cfo_to_pat_3y": 1.73,
+      "debt_to_equity": 1.31,
+      "sales_growth_3y": 2.0,
+      "profit_growth_3y": 20.0
+    }
+  },
+  "TRANSRAILL": {
+    "last_reviewed_at": "2026-11-15T16:47:05.781273",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "sector_classification": "SUNRISE_SECTOR",
+    "future_growth_phase": "SECULAR_COMPOUNDER",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 6047.0,
+      "current_price": 450.0,
+      "pe": 14.0,
+      "roce_pct": 33.6,
+      "roe_pct": 20.0,
+      "cfo_to_pat_3y": 0.84,
+      "debt_to_equity": 0.31,
+      "sales_growth_3y": 30.0,
+      "profit_growth_3y": 56.0
+    }
+  },
+  "ACE": {
+    "last_reviewed_at": "2026-11-15T16:47:05.782171",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "sector_classification": "CYCLICAL_INFLECTION",
+    "future_growth_phase": "SECULAR_COMPOUNDER",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 14052.0,
+      "current_price": 1180.0,
+      "pe": 29.7,
+      "roce_pct": 31.6,
+      "roe_pct": 22.8,
+      "cfo_to_pat_3y": 0.95,
+      "debt_to_equity": 0.07,
+      "sales_growth_3y": 15.0,
+      "profit_growth_3y": 38.0
+    }
+  },
+  "MANYAVAR": {
+    "last_reviewed_at": "2026-11-15T16:47:05.783324",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CONTRA_BET",
+    "future_growth_phase": "MATURE_PLATEAU",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 11514.0,
+      "current_price": 474.0,
+      "pe": 28.6,
+      "roce_pct": 30.7,
+      "roe_pct": 26.7,
+      "cfo_to_pat_3y": 1.05,
+      "debt_to_equity": 0.3,
+      "sales_growth_3y": 34.0,
+      "profit_growth_3y": 46.0
+    }
+  },
+  "SHARDACROP": {
+    "last_reviewed_at": "2026-11-15T16:48:46.902463",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CONTRA_BET",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 6591.0,
+      "current_price": 730.0,
+      "pe": 10.2,
+      "roce_pct": 30.2,
+      "roe_pct": 23.2,
+      "cfo_to_pat_3y": 0.98,
+      "debt_to_equity": 0.01,
+      "sales_growth_3y": 9.0,
+      "profit_growth_3y": 26.0
+    }
+  },
+  "HEXT": {
+    "last_reviewed_at": "2026-11-15T16:48:46.903380",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CONTRA_BET",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 30160.0,
+      "current_price": 494.0,
+      "pe": 19.8,
+      "roce_pct": 30.1,
+      "roe_pct": 24.9,
+      "cfo_to_pat_3y": 1.22,
+      "debt_to_equity": 0.1,
+      "sales_growth_3y": 13.0,
+      "profit_growth_3y": 18.0
+    }
+  },
+  "BLS": {
+    "last_reviewed_at": "2026-11-15T16:48:46.904091",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "sector_classification": "SUNRISE_SECTOR",
+    "future_growth_phase": "SECULAR_COMPOUNDER",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 9449.0,
+      "current_price": 229.0,
+      "pe": 13.2,
+      "roce_pct": 29.8,
+      "roe_pct": 32.2,
+      "cfo_to_pat_3y": 1.03,
+      "debt_to_equity": 0.15,
+      "sales_growth_3y": 26.0,
+      "profit_growth_3y": 49.0
+    }
+  },
+  "KIRLPNU": {
+    "last_reviewed_at": "2026-11-15T16:50:26.786794",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CYCLICAL_INFLECTION",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 8588.0,
+      "current_price": 661.0,
+      "pe": 34.2,
+      "roce_pct": 29.6,
+      "roe_pct": 22.6,
+      "cfo_to_pat_3y": 0.69,
+      "debt_to_equity": 0.0,
+      "sales_growth_3y": null,
+      "profit_growth_3y": null
+    }
+  },
+  "RRKABEL": {
+    "last_reviewed_at": "2026-11-15T16:50:26.788067",
+    "screen_count": 1,
+    "verdict": "STRONG_BUY_WATCH",
+    "sector_classification": "SUNRISE_SECTOR",
+    "future_growth_phase": "ACCELERATING_EXPANSION",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 22434.0,
+      "current_price": 1984.0,
+      "pe": 33.2,
+      "roce_pct": 28.1,
+      "roe_pct": 21.3,
+      "cfo_to_pat_3y": 0.76,
+      "debt_to_equity": 0.19,
+      "sales_growth_3y": 20.0,
+      "profit_growth_3y": 39.0
+    }
+  },
+  "INDIAMART": {
+    "last_reviewed_at": "2026-11-15T16:50:26.789351",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CONTRA_BET",
+    "future_growth_phase": "MATURE_PLATEAU",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 9673.0,
+      "current_price": 1608.0,
+      "pe": 19.3,
+      "roce_pct": 28.0,
+      "roe_pct": 20.7,
+      "cfo_to_pat_3y": 1.23,
+      "debt_to_equity": 0.01,
+      "sales_growth_3y": 17.0,
+      "profit_growth_3y": 19.0
+    }
+  },
+  "NEWGEN": {
+    "last_reviewed_at": "2026-11-15T16:51:31.926976",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CONTRA_BET",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 6258.0,
+      "current_price": 439.0,
+      "pe": 18.0,
+      "roce_pct": 25.0,
+      "roe_pct": 19.6,
+      "cfo_to_pat_3y": 0.78,
+      "debt_to_equity": 0.02,
+      "sales_growth_3y": 17.0,
+      "profit_growth_3y": 22.0
+    }
+  },
+  "POWERMECH": {
+    "last_reviewed_at": "2026-11-15T16:51:31.927583",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "sector_classification": "CYCLICAL_INFLECTION",
+    "future_growth_phase": "ACCELERATING_EXPANSION",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 7613.0,
+      "current_price": 2408.0,
+      "pe": 19.0,
+      "roce_pct": 21.7,
+      "roe_pct": 15.4,
+      "cfo_to_pat_3y": 0.5,
+      "debt_to_equity": 0.44,
+      "sales_growth_3y": 19.0,
+      "profit_growth_3y": 20.0
+    }
+  },
+  "VESUVIUS": {
+    "last_reviewed_at": "2026-11-15T16:51:31.928144",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CYCLICAL_INFLECTION",
+    "future_growth_phase": "MATURE_PLATEAU",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 7408.0,
+      "current_price": 365.0,
+      "pe": 29.4,
+      "roce_pct": 21.3,
+      "roe_pct": 15.9,
+      "cfo_to_pat_3y": 0.66,
+      "debt_to_equity": 0.01,
+      "sales_growth_3y": 16.0,
+      "profit_growth_3y": 28.0
+    }
+  },
+  "SENCO": {
+    "last_reviewed_at": "2026-11-15T16:52:50.003549",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CONTRA_BET",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 5561.0,
+      "current_price": 339.0,
+      "pe": 9.74,
+      "roce_pct": 21.2,
+      "roe_pct": 25.6,
+      "cfo_to_pat_3y": -0.79,
+      "debt_to_equity": 1.07,
+      "sales_growth_3y": 27.0,
+      "profit_growth_3y": 54.0
+    }
+  },
+  "BIKAJI": {
+    "last_reviewed_at": "2026-11-15T16:52:50.005561",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "SUNRISE_SECTOR",
+    "future_growth_phase": "MATURE_PLATEAU",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 12139.0,
+      "current_price": 484.0,
+      "pe": 48.6,
+      "roce_pct": 19.8,
+      "roe_pct": 17.5,
+      "cfo_to_pat_3y": 1.07,
+      "debt_to_equity": 0.26,
+      "sales_growth_3y": 15.0,
+      "profit_growth_3y": 24.0
+    }
+  },
+  "GALLANTT": {
+    "last_reviewed_at": "2026-11-15T16:52:50.006732",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "SUNSET_STAGNANT",
+    "future_growth_phase": "MATURE_PLATEAU",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 12666.0,
+      "current_price": 525.0,
+      "pe": 31.1,
+      "roce_pct": 18.2,
+      "roe_pct": 15.6,
+      "cfo_to_pat_3y": 1.18,
+      "debt_to_equity": 0.17,
+      "sales_growth_3y": 3.0,
+      "profit_growth_3y": 51.0
+    }
+  },
+  "SARDAEN": {
+    "last_reviewed_at": "2026-11-15T16:54:40.309722",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CYCLICAL_INFLECTION",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 15656.0,
+      "current_price": 444.0,
+      "pe": 14.2,
+      "roce_pct": 16.9,
+      "roe_pct": 15.6,
+      "cfo_to_pat_3y": 1.14,
+      "debt_to_equity": 0.3,
+      "sales_growth_3y": 11.0,
+      "profit_growth_3y": 21.0
+    }
+  },
+  "POWERICA": {
+    "last_reviewed_at": "2026-11-15T16:54:40.310808",
+    "screen_count": 1,
+    "verdict": "ACCUMULATE_ON_DIP",
+    "sector_classification": "SUNRISE_SECTOR",
+    "future_growth_phase": "SECULAR_COMPOUNDER",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 5964.0,
+      "current_price": 471.0,
+      "pe": 22.0,
+      "roce_pct": 15.7,
+      "roe_pct": 17.4,
+      "cfo_to_pat_3y": 1.39,
+      "debt_to_equity": 0.02,
+      "sales_growth_3y": 8.0,
+      "profit_growth_3y": 36.0
+    }
+  },
+  "PARADEEP": {
+    "last_reviewed_at": "2026-11-15T16:54:40.312435",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CYCLICAL_INFLECTION",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 14582.0,
+      "current_price": 140.0,
+      "pe": 16.8,
+      "roce_pct": 15.4,
+      "roe_pct": 16.2,
+      "cfo_to_pat_3y": 0.83,
+      "debt_to_equity": 1.38,
+      "sales_growth_3y": 18.0,
+      "profit_growth_3y": 48.0
+    }
+  },
+  "APTUS": {
+    "last_reviewed_at": "2026-11-15T16:56:44.874402",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CONTRA_BET",
+    "future_growth_phase": "UNCERTAIN_CONTRA",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 8764.0,
+      "current_price": 175.0,
+      "pe": 8.55,
+      "roce_pct": 15.4,
+      "roe_pct": 20.1,
+      "cfo_to_pat_3y": -1.2,
+      "debt_to_equity": null,
+      "sales_growth_3y": 26.0,
+      "profit_growth_3y": 23.0
+    }
+  },
+  "JKCEMENT": {
+    "last_reviewed_at": "2026-11-15T16:56:44.875624",
+    "screen_count": 1,
+    "verdict": "HOLD_WATCH",
+    "sector_classification": "CYCLICAL_INFLECTION",
+    "future_growth_phase": "MATURE_PLATEAU",
+    "matched_screens": [
+      "Mid/Smallcap Growth Opportunities"
+    ],
+    "metrics": {
+      "market_cap_cr": 39833.0,
+      "current_price": 5155.0,
+      "pe": 40.3,
+      "roce_pct": 15.1,
+      "roe_pct": 15.6,
+      "cfo_to_pat_3y": 2.06,
+      "debt_to_equity": 1.02,
+      "sales_growth_3y": 12.0,
+      "profit_growth_3y": 33.0
+    }
+  }
+}

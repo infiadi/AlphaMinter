@@ -2,8 +2,8 @@ name: 3. Buyback Arbitrage Monitor
 
 on:
   schedule:
-    # 13:45 UTC = 7:15 PM IST (Monday through Friday)
-    - cron: '45 13 * * 1-5'
+    # 13:45 UTC = 7:15 PM IST (Daily: Monday through Sunday)
+    - cron: '45 13 * * *'
   workflow_dispatch:
 
 jobs:

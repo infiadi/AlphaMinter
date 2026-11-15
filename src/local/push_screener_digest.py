@@ -32,7 +32,7 @@ LOGS_DIR = BASE_DIR / "logs"
 DATA_DIR = BASE_DIR / "data"
 DISPATCH_LEDGER_PATH = DATA_DIR / "dispatched_alerts.json"
 
-MAX_ALERTS_PER_BATCH = 5
+MAX_ALERTS_PER_BATCH = 25
 DISPATCH_COOLDOWN_DAYS = 7
 
 
@@ -41,6 +41,16 @@ def safe_html(text: Any) -> str:
     if text is None:
         return ""
     return html.escape(str(text))
+
+
+def clamp_text(text: Any, max_len: int = 250) -> str:
+    """Clamps narrative text to max_len cleanly without breaking words."""
+    if not text:
+        return ""
+    s = str(text).strip()
+    if len(s) <= max_len:
+        return s
+    return s[:max_len].rsplit(" ", 1)[0] + "..."
 
 
 def load_dispatch_ledger() -> Dict[str, Any]:
@@ -118,8 +128,8 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
     # Sector Lifecycle & Future Growth Phase
     sector_class = str(record.get("sector_classification", "SUNRISE_SECTOR")).upper()
     growth_phase = str(record.get("future_growth_phase", "ACCELERATING_EXPANSION")).replace("_", " ").title()
-    sector_contra = record.get("sector_and_contra_analysis") or record.get("thesis") or "Sector dynamics evaluated."
-    future_catalysts = record.get("forward_growth_catalysts") or record.get("guidance_summary") or "Multi-year capacity and demand drivers."
+    sector_contra = clamp_text(record.get("sector_and_contra_analysis") or record.get("thesis") or "Sector dynamics evaluated.", 160)
+    future_catalysts = clamp_text(record.get("forward_growth_catalysts") or record.get("guidance_summary") or "Multi-year capacity and demand drivers.", 160)
 
     if sector_class == "SUNRISE_SECTOR":
         sector_badge = f"🌅 <b>SUNRISE SECTOR</b> (Phase: <b>{safe_html(growth_phase)}</b>)"
@@ -156,13 +166,13 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
     return_math = safe_html(record.get("return_math_breakdown") or record.get("cagr_breakdown") or "EPS Growth + Valuation Delta")
     margin_of_safety = safe_html(record.get("margin_of_safety") or "High (Quant Verified)")
     
-    why_picked = safe_html(record.get("why_picked") or record.get("thesis") or "High-confluence compounder with structural moat.")
-    forward_guidance = safe_html(record.get("forward_guidance_vs_pe") or record.get("guidance_summary") or "Management commentary supports forward earnings trajectory.")
-    derating_risk = safe_html(record.get("derating_risk_floor_pe") or record.get("risks_summary") or "Derating risk mitigated by current valuation support.")
+    why_picked = safe_html(clamp_text(record.get("why_picked") or record.get("thesis") or "High-confluence compounder with structural moat.", 160))
+    forward_guidance = safe_html(clamp_text(record.get("forward_guidance_vs_pe") or record.get("guidance_summary") or "Management commentary supports forward earnings trajectory.", 160))
+    derating_risk = safe_html(clamp_text(record.get("derating_risk_floor_pe") or record.get("risks_summary") or "Derating risk mitigated by current valuation support.", 160))
     kill_switches = record.get("bear_kill_switches") or record.get("kill_switches") or []
 
     if kill_switches:
-        ks_lines = [f"• <code>{safe_html(ks)}</code>" for ks in kill_switches[:3]]
+        ks_lines = [f"• <code>{safe_html(clamp_text(ks, 80))}</code>" for ks in kill_switches[:2]]
         ks_text = "\n".join(ks_lines)
     else:
         ks_text = "• <i>Standard thesis invalidation triggers apply</i>"
@@ -204,7 +214,7 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
 
     top_news = broker_data.get("recent_news")
     if top_news:
-        clean_headline = safe_html(top_news[0])
+        clean_headline = safe_html(clamp_text(top_news[0], 90))
         broker_section += f"• 📰 <b>Recent Headline:</b> <i>{clean_headline}</i>\n"
 
     broker_section += "\n"
@@ -239,13 +249,13 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
         strat_badge = f" [<code>{safe_html(strategy)}</code>]" if strategy else ""
         trade_lines = [f"<b>🎯 Actionable Trade Setup & Risk/Reward:</b>{strat_badge}"]
         if entry_zone:
-            trade_lines.append(f"• 📥 <b>Recommended Entry:</b> <b>{safe_html(entry_zone)}</b>")
+            trade_lines.append(f"• 📥 <b>Recommended Entry:</b> <b>{safe_html(clamp_text(entry_zone, 110))}</b>")
         if stop_loss:
-            trade_lines.append(f"• 🛑 <b>Structural Invalidation:</b> <b>{safe_html(stop_loss)}</b>")
+            trade_lines.append(f"• 🛑 <b>Structural Invalidation:</b> <b>{safe_html(clamp_text(stop_loss, 90))}</b>")
         if rr_str:
-            trade_lines.append(f"• ⚖️ <b>Risk:Reward Ratio:</b> <b>{safe_html(rr_str)}</b>")
+            trade_lines.append(f"• ⚖️ <b>Risk:Reward Ratio:</b> <b>{safe_html(clamp_text(rr_str, 90))}</b>")
         if rationale:
-            trade_lines.append(f"• 💡 <b>Setup Context:</b> <i>{safe_html(rationale)}</i>")
+            trade_lines.append(f"• 💡 <b>Setup Context:</b> <i>{safe_html(clamp_text(rationale, 160))}</i>")
         trade_section = "\n".join(trade_lines) + "\n\n"
 
     # 2. Peer Relative Valuation Matrix
@@ -253,18 +263,19 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
     peer_section = ""
     if peers:
         p_lines = []
-        for p in peers[:3]:
+        for p in peers[:2]:
             p_lines.append(f"• <b>{safe_html(p.get('name'))}:</b> P/E: <b>{p.get('pe')}x</b> | ROCE: <b>{p.get('roce')}%</b> | M.Cap: ₹{p.get('mcap_cr')} Cr")
         peer_verdict = record.get("peer_comparison_verdict")
         if peer_verdict:
-            p_lines.append(f"• <i>{safe_html(peer_verdict)}</i>")
+            p_lines.append(f"• <i>{safe_html(clamp_text(peer_verdict, 140))}</i>")
         peer_section = f"<b>👥 Peer Relative Valuation Matrix:</b>\n" + "\n".join(p_lines) + "\n\n"
 
     # 3. Concall Key Takeaways
     concall_notes = record.get("concall_key_takeaways")
     concall_section = ""
     if concall_notes:
-        concall_section = f"<b>🎙️ Concall Key Takeaways & Guidance:</b>\n<i>{safe_html(concall_notes)}</i>\n\n"
+        concall_clean = clamp_text(concall_notes, 160)
+        concall_section = f"<b>🎙️ Concall Key Takeaways & Guidance:</b>\n<i>{safe_html(concall_clean)}</i>\n\n"
 
     msg = (
         f"{title}\n\n"
@@ -307,7 +318,7 @@ def push_screener_digest(
     date_str: Optional[str] = None,
     target_symbols: Optional[List[str]] = None,
     force: bool = False,
-    max_alerts: int = MAX_ALERTS_PER_BATCH
+    max_alerts: Optional[int] = None
 ) -> int:
     """
     Reads the screener audit JSONL file, filters approved high-conviction decisions,
@@ -398,21 +409,28 @@ def push_screener_digest(
 
     # Sort descending to assign ranks #1 (Best), #2, #3...
     candidates_ranked = sorted(fresh_candidates, key=rank_score, reverse=True)
-    picks_to_dispatch = candidates_ranked[:max_alerts]
+    if max_alerts is not None and max_alerts > 0:
+        picks_to_dispatch = candidates_ranked[:max_alerts]
+    elif target_symbols:
+        picks_to_dispatch = candidates_ranked
+    else:
+        picks_to_dispatch = candidates_ranked[:MAX_ALERTS_PER_BATCH]
     total_picks = len(picks_to_dispatch)
 
     # Assign rank: index 0 is Rank 1 (Top Pick)
     picks_with_rank = [(r, idx + 1) for idx, r in enumerate(picks_to_dispatch)]
 
     # 1. Send Batch Summary Header FIRST (so it sits at the top of the batch in Telegram)
+    strong_buy_cnt = sum(1 for r, _ in picks_with_rank if r.get('verdict') == 'STRONG_BUY_WATCH')
+    acc_dip_cnt = sum(1 for r, _ in picks_with_rank if r.get('verdict') == 'ACCUMULATE_ON_DIP')
     summary_text = (
         f"📋 <b>AlphaMinter Screener Audit Digest</b>\n\n"
         f"• Date: <code>{now_dt.strftime('%Y-%m-%d')}</code>\n"
         f"• Evaluated Candidates: <b>{len(candidates)}</b>\n"
         f"• High-Conviction Approved: <b>{total_picks}</b>\n"
-        f"• Strong Buy Watch: <b>{sum(1 for r, _ in picks_with_rank if r.get('verdict') == 'STRONG_BUY_WATCH')}</b>\n"
-        f"• Accumulate on Dip: <b>{sum(1 for r, _ in picks_with_rank if r.get('verdict') == 'ACCUMULATE_ON_DIP')}</b>\n\n"
-        f"⚡ <i>Delivering {total_picks} pick(s) below. The #1 Top Pick is sent last to appear right at the bottom of your chat!</i>"
+        f"• Strong Buy Watch: <b>{strong_buy_cnt}</b>\n"
+        f"• Accumulate on Dip: <b>{acc_dip_cnt}</b>\n\n"
+        f"⚡ <i>Delivering all {total_picks} approved pick(s) below. The #1 Top Pick is sent last to appear right at the bottom of your chat!</i>"
     )
     dispatcher.send_message(summary_text)
 
@@ -445,7 +463,7 @@ def parse_args():
     parser.add_argument("date_str", nargs="?", default=None, help="Target date YYYY-MM-DD")
     parser.add_argument("--symbols", type=str, default=None, help="Comma-separated list of symbols to dispatch")
     parser.add_argument("--force", action="store_true", help="Bypass cooldown and re-dispatch approved stocks")
-    parser.add_argument("--max-alerts", type=int, default=MAX_ALERTS_PER_BATCH, help="Maximum alert cards to send")
+    parser.add_argument("--max-alerts", type=int, default=None, help="Maximum alert cards to send")
     return parser.parse_args()
 
 

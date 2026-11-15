@@ -2,8 +2,8 @@ name: 2. PEAD Earnings Drift Scanner
 
 on:
   schedule:
-    # 13:30 UTC = 7:00 PM IST (Monday through Saturday)
-    - cron: '30 13 * * 1-6'
+    # 13:30 UTC = 7:00 PM IST (Daily: Monday through Sunday)
+    - cron: '30 13 * * *'
   workflow_dispatch:
 
 jobs:

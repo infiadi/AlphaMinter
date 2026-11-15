@@ -92,9 +92,19 @@ def build_analyst_prompt(candidate: Dict[str, Any]) -> str:
     else:
         peers_str = "  * None available"
 
-    ts = tech.get("trade_setup", {})
-    entry_zone_str = ts.get("entry_zone", "N/A")
-    stop_loss_str = ts.get("stop_loss", "N/A")
+    # Technical Levels & Support Proximity
+    t_levels = tech.get("technical_levels", {})
+    cmp_now = t_levels.get("cmp", metrics.get("current_price", top_ratios.get("Current Price", "N/A")))
+    support_prox = t_levels.get("support_proximity", "N/A")
+    swing_low = t_levels.get("swing_low_20d", "N/A")
+    swing_high = t_levels.get("swing_high_20d", "N/A")
+    ema20_val = t_levels.get("ema20", "N/A")
+    ema50_val = t_levels.get("ema50", "N/A")
+    ema200_val = t_levels.get("ema200", "N/A")
+    dist_20 = t_levels.get("dist_to_ema20_pct", "N/A")
+    dist_50 = t_levels.get("dist_to_ema50_pct", "N/A")
+    dist_200 = t_levels.get("dist_to_ema200_pct", "N/A")
+    b_low = b_data.get("target_low", "N/A")
 
     prompt = f"""You are analyzing candidate stock {sym} ({name}).
 Evaluate this single stock using its pre-prepared quantitative dossier below.
@@ -104,14 +114,19 @@ Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
 - Symbol: {sym} | Company: {name}
 - Matched Screens: {', '.join(screens)} (Hits: {candidate.get('screen_count', 1)})
 - Rubrics: {' '.join(rubrics)}
-- Market Cap: ₹{metrics.get('market_cap_cr', top_ratios.get('Market Cap', 'N/A'))} Cr | CMP: ₹{metrics.get('current_price', top_ratios.get('Current Price', 'N/A'))}
+- Market Cap: ₹{metrics.get('market_cap_cr', top_ratios.get('Market Cap', 'N/A'))} Cr | CMP: ₹{cmp_now}
 - Drawdown: Down from 52W High: {down_52w}% | Down from ATH: {down_ath}%
 - Valuation & Quality (Screener): Stock P/E: {metrics.get('pe', top_ratios.get('Stock P/E', 'N/A'))}x | ROCE: {metrics.get('roce_pct', top_ratios.get('ROCE', 'N/A'))}% | ROE: {metrics.get('roe_pct', top_ratios.get('ROE', 'N/A'))}%
 - Forward Valuation & Consensus (yFinance): Street Target: {b_target} | Forward P/E: {b_fwd_pe} | Forward EPS: {b_fwd_eps} | EV/EBITDA: {b_ev_ebitda}
 - Institutional Revisions & Trajectory: 30D EPS Revisions: {b_revisions} | 30D EPS Drift: {b_trend}
 - Direct Industry Peers (Screener):
 {peers_str}
-- Technical Trade Setup: Ideal Dip-Buy Zone: {entry_zone_str} | Structural Stop-Loss: {stop_loss_str}
+- Structural Technical Support Levels:
+  * Current CMP: ₹{cmp_now}
+  * Support Proximity: {support_prox}
+  * Moving Averages: EMA20: ₹{ema20_val} ({dist_20}%) | EMA50: ₹{ema50_val} ({dist_50}%) | EMA200: ₹{ema200_val} ({dist_200}%)
+  * 20-Day Range: Swing Low ₹{swing_low} | Swing High ₹{swing_high}
+  * Broker Floor (Lowest Analyst Target): ₹{b_low}
 - Recent News & Concall Summaries:
 {b_news}
 - Cash Conversion: 3Y CFO / PAT: {metrics.get('cfo_to_pat_3y', 'N/A')}x | 3Y CFO / EBITDA: {metrics.get('cfo_to_ebitda_3y', 'N/A')}x
@@ -131,7 +146,7 @@ Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
    - Quant screens already filter past growth (3Y sales/profit > 20%, ROCE > 20%, PEG < 2).
    - Your primary job is to evaluate FUTURE GROWTH VISIBILITY for FY27-FY29:
      * SUNRISE_SECTOR: Expanding TAM (>18-25% CAGR), multi-year tailwinds (Power T&D, Defense, EMS, Renewable/BESS, Data Centers, CDMO, Quick Commerce). High conviction candidates.
-     * CONTRA_BET (e.g. IT services facing AI threat / discretionary cuts, or Agrochem destocking): Valuations are at all-time lows, BUT future growth phase is UNCERTAIN. Must wait on HOLD_WATCH unless verifiable proof of turnaround.
+     * CONTRA_BET: Structural value traps (IT facing AI disruption, commoditized agrochem destocking) must wait on HOLD_WATCH.
      * DEEP-VALUE FRANCHISE MISPRICING: If a stock is trading at a deep drawdown (>40% from ATH) but has stellar unit economics (ROA > 5%, ROE > 15%, pristine balance sheet e.g. Aptus Value Housing) and sell-side consensus confirms BUY with Forward P/E < 15x: DO NOT PENALIZE as a broken trap! Classify as PE_RERATING or EARNINGS_COMPOUNDER and award ACCUMULATE_ON_DIP.
      * CYCLICAL_INFLECTION: Upcoming capex coming online in FY26-FY28 backed by firm order book.
      * SUNSET_STAGNANT: Low volume growth (<8%), commoditized price-taker, moat decay. Mandatory REJECT or HOLD_WATCH.
@@ -139,11 +154,18 @@ Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
    - Check concall and broker reports for: executable order book (2x-3x revenue), capacity commissioning dates, margin durability.
    - Cross-check Street consensus Forward P/E and EPS revisions: Are analysts revising estimates UP or DOWN?
    - Is future growth accelerating or plateauing?
-3. ANTI-DERATING & FORWARD PEG GATE:
+3. ACTIONABLE ENTRY ZONE & STRUCTURAL RISK/REWARD SETUP:
+   - CRITICAL: Never use fixed, arbitrary percentage targets or static discount formulas!
+   - Determine whether the stock is ALREADY at structural support (testing 20 EMA, 50 EMA, 20-day swing low, or at historical valuation floor like Aptus at single-digit P/E):
+     * If ALREADY at support: Recommend immediate entry at CMP / current levels (e.g. "ACCUMULATE_AT_CMP: ₹{cmp_now}–₹{round(float(cmp_now)*1.02, 1) if isinstance(cmp_now, (int, float)) else cmp_now}"). DO NOT make the user wait for a lower pullback that risks missing the move!
+     * If extended (>5% above 20/50 EMA): Specify a realistic pullback accumulation range anchored to nearest EMA support.
+     * Invalidation Stop-Loss: Set strictly below structural support (e.g. below 20-day swing low, 200 EMA, or broker floor), calculating exact % downside risk.
+     * Risk-to-Reward Ratio: Calculate (Target Upside % / Risk %). Must be favorable (>= 3:1).
+4. ANTI-DERATING & FORWARD PEG GATE:
    - Calculate Forward PEG = Current P/E / Forward Guided EPS Growth %.
    - If P/E > 30x and forward guidance is < 16% (or unguided), DOWNGRADE to HOLD_WATCH or REJECT.
    - Net 3Y CAGR = Forward EPS Growth % - Derating Drag %. Must be >= 20% (>=25% for STRONG_BUY_WATCH).
-4. RUTHLESS INSTITUTIONAL SELECTIVITY:
+5. RUTHLESS INSTITUTIONAL SELECTIVITY:
    - Target approval rate: Only 10-15% of candidates (2-4 stocks out of 25-30) should ever be approved!
    - STRONG_BUY_WATCH: Conviction 8.5-10.0, Sunrise Sector / Capex Inflection, verified forward growth >= 20%, Forward PEG <= 1.8x, Net CAGR >= 25%.
    - ACCUMULATE_ON_DIP: Conviction 7.5-8.4, growing sector or deep-value franchise mispricing, solid moat, forward growth >= 16%, pullbacks elevate return to >=25%.
@@ -163,6 +185,13 @@ CRITICAL: Return ONLY a valid, compact JSON object matching this schema. No intr
   "cagr_breakdown": "Forward EPS growth 24% - Multiple derating drag 3% = Net 21% CAGR",
   "margin_of_safety": "High|Moderate|Low with brief justification",
   "why_picked": "Specific structural catalyst, moat, and market share driver in a sunrise sector",
+  "actionable_trade_setup": {{
+    "entry_strategy": "ACCUMULATE_AT_CMP|ACCUMULATE_ON_DIP|BREAKOUT_ENTRY",
+    "entry_zone": "e.g. ₹1,960–₹1,990 (CMP is currently testing 50 EMA support; accumulate now)",
+    "invalidation_stop_loss": "e.g. ₹1,880 (-5.3% below 50 EMA and 20D swing low)",
+    "risk_reward_ratio": "e.g. 4.2:1 (Target +42% vs Risk -5.3%)",
+    "setup_rationale": "Why this entry was selected (e.g. stock already resting at critical 50 EMA support after 12% consolidation; waiting for lower prices risks missing the move)"
+  }},
   "concall_key_takeaways": "2-3 bullet points: Management commitments on FY26-FY28 revenue targets, capacity commissioning dates, and margin guidance",
   "peer_comparison_verdict": "How this stock compares to top industry peers on P/E, ROCE, and valuation discount",
   "forward_growth_catalysts": "Concrete forward visibility: Upcoming capacity commissioning dates, order book executable timeline, or market-share expansion",
@@ -436,7 +465,8 @@ async def run_pipeline():
                 "concall_key_takeaways": parsed.get("concall_key_takeaways", ""),
                 "peer_comparison_verdict": parsed.get("peer_comparison_verdict", ""),
                 "peers": dossier.get("peers", []),
-                "trade_setup": tech.get("trade_setup", {}),
+                "actionable_trade_setup": parsed.get("actionable_trade_setup", {}),
+                "technical_levels": tech.get("technical_levels", {}),
                 "forward_growth_catalysts": forward_growth_catalysts,
                 "sector_and_contra_analysis": sector_contra,
                 "forward_guidance_vs_pe": forward_guidance,

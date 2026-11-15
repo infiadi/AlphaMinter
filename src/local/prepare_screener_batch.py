@@ -571,25 +571,38 @@ def fetch_technofundamental_batch(symbols: List[str]) -> Dict[str, Dict[str, Any
             if mansfield_rs is not None:
                 summary += f" | Mansfield RS (50D): {mansfield_rs:+.2f}%"
 
-            # Calculate Actionable Entry Zone & Structural Stop-Loss
-            if stage == "STAGE_2_UPTREND":
-                entry_low = round(min(ema50, cmp * 0.96), 1)
-                entry_high = round(min(cmp, max(ema20, ema50 * 1.02)), 1)
-                stop_loss = round(ema200 * 0.97 if ema200 and cmp > ema200 else ema50 * 0.95, 1)
-            elif stage == "STAGE_4_DOWNTREND":
-                entry_low = round(cmp * 0.95, 1)
-                entry_high = round(cmp * 1.01, 1)
-                stop_loss = round(cmp * 0.90, 1)
-            else:
-                entry_low = round(min(ema20 * 0.98, cmp * 0.97), 1)
-                entry_high = round(cmp * 1.01, 1)
-                stop_loss = round(ema200 * 0.96 if ema200 and cmp > ema200 else cmp * 0.92, 1)
+            # Compute Structural Support Levels & Proximity
+            swing_low_20d = round(float(close.tail(20).min()), 1) if len(close) >= 20 else round(cmp * 0.95, 1)
+            swing_high_20d = round(float(close.tail(20).max()), 1) if len(close) >= 20 else round(cmp * 1.05, 1)
+            dist_to_ema20 = round(((cmp - ema20) / ema20) * 100.0, 1)
+            dist_to_ema50 = round(((cmp - ema50) / ema50) * 100.0, 1)
+            dist_to_ema200 = round(((cmp - ema200) / ema200) * 100.0, 1) if ema200 else None
 
-            risk_pct = round(((cmp - stop_loss) / cmp) * 100.0, 1) if cmp > stop_loss else 5.0
-            trade_setup = {
-                "entry_zone": f"₹{entry_low:,.1f} – ₹{entry_high:,.1f}",
-                "stop_loss": f"₹{stop_loss:,.1f} (-{risk_pct}%)",
-                "risk_pct": risk_pct
+            # Identify if stock is currently testing a structural support
+            support_status = []
+            if abs(dist_to_ema20) <= 1.5:
+                support_status.append(f"At 20 EMA Support (Δ {dist_to_ema20:+.1f}%)")
+            if abs(dist_to_ema50) <= 2.0:
+                support_status.append(f"At 50 EMA Support (Δ {dist_to_ema50:+.1f}%)")
+            if dist_to_ema200 is not None and abs(dist_to_ema200) <= 2.5:
+                support_status.append(f"At 200 EMA Support (Δ {dist_to_ema200:+.1f}%)")
+            if cmp <= swing_low_20d * 1.02:
+                support_status.append(f"Near 20D Swing Low (₹{swing_low_20d})")
+
+            support_desc = ", ".join(support_status) if support_status else f"Floating (Above 50 EMA by {dist_to_ema50:+.1f}%)"
+
+            technical_levels = {
+                "cmp": round(cmp, 1),
+                "ema20": round(ema20, 1),
+                "ema50": round(ema50, 1),
+                "ema200": round(ema200, 1) if ema200 else None,
+                "dist_to_ema20_pct": dist_to_ema20,
+                "dist_to_ema50_pct": dist_to_ema50,
+                "dist_to_ema200_pct": dist_to_ema200,
+                "swing_low_20d": swing_low_20d,
+                "swing_high_20d": swing_high_20d,
+                "support_proximity": support_desc,
+                "is_at_support": len(support_status) > 0
             }
 
             results[sym] = {
@@ -600,7 +613,7 @@ def fetch_technofundamental_batch(symbols: List[str]) -> Dict[str, Dict[str, Any
                 "ema50": round(ema50, 1),
                 "ema200": round(ema200, 1) if ema200 else None,
                 "ema200_rising": ema200_rising,
-                "trade_setup": trade_setup,
+                "technical_levels": technical_levels,
                 "technical_summary": summary
             }
         except Exception as e:

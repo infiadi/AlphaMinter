@@ -209,22 +209,44 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
 
     broker_section += "\n"
 
-    # 1. Actionable Trade Setup & Risk/Reward
+    # 1. Actionable Trade Setup & Risk/Reward (Synthesizing CMP, Support Proximity, Valuation Floor, and Broker Targets)
+    ats = record.get("actionable_trade_setup") or {}
     ts = record.get("trade_setup") or {}
-    entry_zone = ts.get("entry_zone")
-    stop_loss = ts.get("stop_loss")
-    risk_pct = ts.get("risk_pct", 8.0)
-    upside_pct = broker_data.get("upside_pct") or 25.0
-    rr_ratio = round(max(upside_pct, 10.0) / max(float(risk_pct), 1.0), 1)
+    tl = record.get("technical_levels") or {}
+
+    strategy = ats.get("entry_strategy")
+    entry_zone = ats.get("entry_zone") or ts.get("entry_zone")
+    stop_loss = ats.get("invalidation_stop_loss") or ts.get("stop_loss")
+    rr_str = ats.get("risk_reward_ratio")
+    rationale = ats.get("setup_rationale")
+
+    # Fallback to structural technicals if analyst setup is empty
+    if not entry_zone and tl.get("cmp"):
+        cmp_now = tl["cmp"]
+        if tl.get("is_at_support"):
+            strategy = "ACCUMULATE_AT_CMP"
+            entry_zone = f"₹{cmp_now} – ₹{round(cmp_now * 1.02, 1)} ({tl.get('support_proximity')})"
+        else:
+            entry_zone = f"₹{tl.get('ema50', cmp_now * 0.95)} – ₹{cmp_now}"
+        sl_val = tl.get("swing_low_20d") or (tl.get("ema200") * 0.97 if tl.get("ema200") else cmp_now * 0.92)
+        r_pct = round(((cmp_now - sl_val) / cmp_now) * 100.0, 1) if cmp_now > sl_val else 6.0
+        stop_loss = f"₹{sl_val} (-{r_pct}%)"
+        up_pct = broker_data.get("upside_pct") or 25.0
+        rr_str = f"{round(max(up_pct, 10.0) / max(r_pct, 1.0), 1)}:1"
 
     trade_section = ""
-    if entry_zone and stop_loss:
-        trade_section = (
-            f"<b>🎯 Actionable Entry Zone & Risk/Reward:</b>\n"
-            f"• 📥 <b>Ideal Buy Zone:</b> <b>{entry_zone}</b>\n"
-            f"• 🛑 <b>Structural Stop-Loss:</b> <b>{stop_loss}</b>\n"
-            f"• ⚖️ <b>Risk:Reward Ratio:</b> <b>{rr_ratio}:1</b> (Target: <code>+{upside_pct:.1f}%</code> vs Risk: <code>-{risk_pct:.1f}%</code>)\n\n"
-        )
+    if entry_zone or strategy:
+        strat_badge = f" [<code>{safe_html(strategy)}</code>]" if strategy else ""
+        trade_lines = [f"<b>🎯 Actionable Trade Setup & Risk/Reward:</b>{strat_badge}"]
+        if entry_zone:
+            trade_lines.append(f"• 📥 <b>Recommended Entry:</b> <b>{safe_html(entry_zone)}</b>")
+        if stop_loss:
+            trade_lines.append(f"• 🛑 <b>Structural Invalidation:</b> <b>{safe_html(stop_loss)}</b>")
+        if rr_str:
+            trade_lines.append(f"• ⚖️ <b>Risk:Reward Ratio:</b> <b>{safe_html(rr_str)}</b>")
+        if rationale:
+            trade_lines.append(f"• 💡 <b>Setup Context:</b> <i>{safe_html(rationale)}</i>")
+        trade_section = "\n".join(trade_lines) + "\n\n"
 
     # 2. Peer Relative Valuation Matrix
     peers = record.get("peers") or []

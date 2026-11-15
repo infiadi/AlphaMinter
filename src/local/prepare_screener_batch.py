@@ -1,5 +1,11 @@
 import os
 import sys
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 import re
 import json
 import logging
@@ -162,7 +168,8 @@ def evaluate_screen_level_flags(
     has_multi_year_cushion = (
         (profit_3y is not None and profit_3y >= 15.0) or
         (profit_5y is not None and profit_5y >= 15.0) or
-        (sales_3y is not None and sales_3y >= 12.0)
+        (sales_3y is not None and sales_3y >= 12.0) or
+        (sales_5y is not None and sales_5y >= 15.0)
     )
 
     # 3. Latest Qtr YoY PAT Growth
@@ -179,13 +186,42 @@ def evaluate_screen_level_flags(
     # 4. Latest Qtr YoY Sales Growth
     if "NEG_LATEST_QTR_SALES" not in exempt_flags:
         global_min_sales = float(global_filters.get("min_latest_qtr_yoy_sales_pct", -10.0))
-        sales_growth = extract_screen_metric(m, ["sales growth"])
+        # Prioritize exact quarterly ratio if available: 'Sales latest quarter / Sales preceding year quarter'
+        sales_ratio = extract_screen_metric(m, ["sales latest quarter", "sales preceding year"])
+        if sales_ratio is not None:
+            sales_growth = round((sales_ratio - 1.0) * 100.0, 2)
+        else:
+            sales_growth = extract_screen_metric(m, ["sales growth"])
+
         if sales_growth is not None and sales_growth < global_min_sales:
             if has_multi_year_cushion:
-                logger.info(f"Screen {cand_sym}: Transient Qtr Sales dip ({sales_growth}%) cushioned by multi-year CAGR (3Y Sales: {sales_3y}%). Not penalized.")
+                logger.info(f"Screen {cand_sym}: Transient Qtr Sales dip ({sales_growth:.1f}%) cushioned by multi-year CAGR (3Y Sales: {sales_3y}%). Not penalized.")
             else:
                 flags.append("NEG_LATEST_QTR_SALES")
-                reasons["NEG_LATEST_QTR_SALES"] = f"Screen Sales growth {sales_growth}% < {global_min_sales}% (no multi-year cushion)"
+                reasons["NEG_LATEST_QTR_SALES"] = f"Screen Sales growth {sales_growth:.1f}% < {global_min_sales}% (no multi-year cushion)"
+
+    # 5. Screen-Level Cash Conversion (3Y CFO / Net Profit)
+    # Evaluates cash conversion directly at the screen table with 0 extra requests
+    if "FORENSIC_LOW_CFO" not in exempt_flags and not is_fin_screen:
+        min_cfo_to_pat = float(global_filters.get("min_cfo_to_pat_3y", 0.60))
+        screen_cfos = [ov.get("min_cfo_to_pat_3y") for ov in screen_overrides_list if ov.get("min_cfo_to_pat_3y") is not None]
+        effective_min_cfo = max(screen_cfos) if screen_cfos else min_cfo_to_pat
+        cfo_pat_screen = extract_screen_metric(m, ["operating cash flow 3years", "cash flow 3years / net profit", "cash flow 3years"])
+        if cfo_pat_screen is not None:
+            if cfo_pat_screen < 0:
+                flags.append("FORENSIC_LOW_CFO")
+                reasons["FORENSIC_LOW_CFO"] = f"Screen 3Y CFO/PAT negative ({cfo_pat_screen:.2f}x). Cash drain / working capital bleed."
+            elif cfo_pat_screen < effective_min_cfo:
+                flags.append("FORENSIC_LOW_CFO")
+                reasons["FORENSIC_LOW_CFO"] = f"Screen 3Y CFO/PAT {cfo_pat_screen:.2f}x < required {effective_min_cfo:.2f}x."
+
+    # 6. Screen-Level Other Income / PBT
+    # Evaluates non-core treasury dependency directly at the screen table with 0 extra requests
+    if "FORENSIC_OTHER_INC" not in exempt_flags and not is_fin_screen:
+        other_inc_pbt = extract_screen_metric(m, ["other income last year", "other income / profit before tax", "other income"])
+        if other_inc_pbt is not None and other_inc_pbt > 0.20:
+            flags.append("FORENSIC_OTHER_INC")
+            reasons["FORENSIC_OTHER_INC"] = f"Screen Other Income/PBT {other_inc_pbt:.2f}x > 0.20 threshold (earnings quality / treasury reliance)."
 
     return flags, reasons
 
@@ -270,9 +306,9 @@ def evaluate_negative_flags(
         if pledge_pct > global_max_pledge:
             flags.append("NEG_PROMOTER_PLEDGE")
             reasons["NEG_PROMOTER_PLEDGE"] = f"Promoter pledge {pledge_pct}% > max allowed {global_max_pledge}%"
-        elif promoter_qoq is not None and promoter_qoq < -2.0:
+        elif promoter_qoq is not None and promoter_qoq < -3.0:
             flags.append("NEG_PROMOTER_PLEDGE")
-            reasons["NEG_PROMOTER_PLEDGE"] = f"Promoter holding declined by {abs(promoter_qoq)}% QoQ (>-2.0% threshold)"
+            reasons["NEG_PROMOTER_PLEDGE"] = f"Promoter holding declined by {abs(promoter_qoq)}% QoQ (>-3.0% threshold)"
 
     # Multi-year growth resilience check:
     # 1 YoY/QoQ negative quarter does not make a stock bad if 3Y or 5Y CAGR is strong!
@@ -289,11 +325,13 @@ def evaluate_negative_flags(
     profit_3y_cagr = parse_growth("Compounded Profit Growth", "3 Years")
     profit_5y_cagr = parse_growth("Compounded Profit Growth", "5 Years")
     sales_3y_cagr = parse_growth("Compounded Sales Growth", "3 Years")
+    sales_5y_cagr = parse_growth("Compounded Sales Growth", "5 Years")
 
     has_multi_year_cushion = (
         (profit_3y_cagr is not None and profit_3y_cagr >= 15.0) or
         (profit_5y_cagr is not None and profit_5y_cagr >= 15.0) or
-        (sales_3y_cagr is not None and sales_3y_cagr >= 12.0)
+        (sales_3y_cagr is not None and sales_3y_cagr >= 12.0) or
+        (sales_5y_cagr is not None and sales_5y_cagr >= 15.0)
     )
 
     # 5. NEG_LATEST_QTR_PAT
@@ -375,11 +413,18 @@ def evaluate_forensic_flags(
 
     cfo_ebitda = metrics.get("cfo_to_ebitda_3y")
     cfo_pat = metrics.get("cfo_to_pat_3y")
-    if (cfo_ebitda is not None and cfo_ebitda < 0.65) or (cfo_pat is not None and cfo_pat < effective_min_cfo):
+    is_low_cfo = False
+    if cfo_pat is not None and cfo_pat < 0:
+        is_low_cfo = True
+    elif cfo_pat is not None and cfo_pat < effective_min_cfo:
+        if cfo_ebitda is None or cfo_ebitda < 0.65:
+            is_low_cfo = True
+
+    if is_low_cfo:
         flags.append("FORENSIC_LOW_CFO")
         reasons["FORENSIC_LOW_CFO"] = (
-            f"Poor cash conversion: 3Y CFO/EBITDA={cfo_ebitda if cfo_ebitda is not None else 'N/A'} (<0.65) "
-            f"or CFO/PAT={cfo_pat if cfo_pat is not None else 'N/A'} (<{effective_min_cfo:.2f})"
+            f"Poor cash conversion: 3Y CFO/PAT={cfo_pat if cfo_pat is not None else 'N/A'} (<{effective_min_cfo:.2f}) "
+            f"and CFO/EBITDA={cfo_ebitda if cfo_ebitda is not None else 'N/A'} (<0.65)"
         )
 
     # 2. FORENSIC_DEBTOR_BLOAT (from static #ratios table)
@@ -579,6 +624,7 @@ Follow the STRICT BEAR-FIRST EVALUATION PROTOCOL.
 - Working Capital: Debtor Days: {metrics.get('debtor_days_latest', 'N/A')} (Delta vs 3Y Avg: {metrics.get('debtor_days_delta', 'N/A')}d)
 - Capex & Leverage: CWIP / Net Block: {metrics.get('cwip_ratio_latest', 'N/A')}x | Debt to Equity: {metrics.get('debt_to_equity', 'N/A')}
 - Non-Core Income: Other Income / PBT: {metrics.get('other_income_to_pbt_ttm', 'N/A')}
+- Quarterly Sales Expansion: {metrics.get('latest_qtr_yoy_sales_pct', 'N/A')}% YoY (Quarterly Ratio: {metrics.get('sales_qtr_ratio', 'N/A')})
 - Promoter: Pledge: {metrics.get('promoter_pledge_pct', 0.0)}% | QoQ Change: {metrics.get('promoter_qoq_change_pct', 'N/A')}%
 - Compounded Sales Growth: {json.dumps(growth.get('Compounded Sales Growth', {}))}
 - Compounded Profit Growth: {json.dumps(growth.get('Compounded Profit Growth', {}))}
@@ -642,7 +688,7 @@ CRITICAL: At the end of your response, output a markdown code block tagged ```js
     return prompt
 
 
-def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
+def run_stage_1_prep(limit: Optional[int] = None, refresh_screens: bool = False) -> Dict[str, Any]:
     """
     Executes Stage 1 data preparation:
     1. Loads screens configuration.
@@ -685,7 +731,7 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         rubric = screen.get("rubric", "")
         overrides = screen.get("conditional_overrides", {})
 
-        stocks = parser.parse_saved_screen(screen, max_pages=max_pages)
+        stocks = parser.parse_saved_screen(screen, max_pages=max_pages, use_cache=not refresh_screens)
         for st in stocks:
             sym = st["symbol"].upper()
             if sym not in merged_candidates:
@@ -788,63 +834,101 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         f"Instant Screen Rejections={len(rejected_candidates)}"
     )
 
-    # Step D: Balanced Screen Allocation for Deep Dossier Fetching
-    # Ensures representation from:
-    # 1. Multi-Screen Confluence (all screen_count >= 2)
-    # 2. Bruised Bluechips (sorted by Market Cap & Margin of Safety / Discount from ATH) -> Guarantees TCS, ITC, HUL
-    # 3. Super High Growth (sorted by 3Y/5Y growth)
-    # 4. Midcap Opportunity (sorted by ROCE)
+    # Step D: Dynamic Multi-Screen & Quality Allocation for Deep Dossier Fetching
+    # Generic algorithm that dynamically adapts to ANY array of screens:
+    # 1. Multi-Screen Confluence: candidates appearing in >= 2 screens are prioritized first.
+    # 2. Per-Screen Balanced Allocation: distributes quota across every screen configured in screens.json.
+    # 3. Dynamic Quality Sorting:
+    #    - If screen rubric/name reflects Value/Bluechip: prioritizes Market Cap + Drawdown from ATH.
+    #    - If screen rubric/name reflects Growth/Momentum: prioritizes 3Y Profit CAGR + Qtr Sales Expansion.
+    #    - Default/General: prioritizes ROCE/ROE + Cash Conversion.
+    # 4. Fallback / Single-Screen: if only 1 screen is configured, prioritizes by composite quality score.
 
-    multi_screen = [c for c in screen_passed_candidates if c.get("screen_count", 1) >= 2]
-    
-    # Bruised Bluechips: Sort by Market Cap descending (giants like TCS, ITC, HUL first)
-    bruised_bluechips = [
-        c for c in screen_passed_candidates
-        if "Bruised Bluechips" in c.get("matched_screens", []) and c.get("screen_count", 1) == 1
-    ]
-    bruised_bluechips.sort(
-        key=lambda c: (
-            extract_screen_metric(c.get("screen_metrics", {}), ["mar cap", "market cap"]) or 0.0,
-            extract_screen_metric(c.get("screen_metrics", {}), ["down ath", "down %"]) or 0.0
-        ),
-        reverse=True
-    )
-
-    # Super High Growth: Sort by 3Y profit growth & sales growth
-    growth_stocks = [
-        c for c in screen_passed_candidates
-        if "Super High Growth Companies in Long Term" in c.get("matched_screens", []) and c.get("screen_count", 1) == 1
-    ]
-    growth_stocks.sort(
-        key=lambda c: (
-            extract_screen_metric(c.get("screen_metrics", {}), ["profit var 3yrs", "profit var 3"]) or 0.0,
-            extract_screen_metric(c.get("screen_metrics", {}), ["sales growth"]) or 0.0
-        ),
-        reverse=True
-    )
-
-    # Midcap Opportunity: Sort by ROCE
-    midcap_stocks = [
-        c for c in screen_passed_candidates
-        if "Midcap Opportunity" in c.get("matched_screens", []) and c.get("screen_count", 1) == 1
-    ]
-    midcap_stocks.sort(
-        key=lambda c: extract_screen_metric(c.get("screen_metrics", {}), ["roce"]) or 0.0,
-        reverse=True
-    )
-
-    # Balanced assembly of candidates to audit
+    max_dossiers = int(settings.get("max_dossiers_to_fetch", 30))
+    effective_limit = limit if (limit and limit > 0) else max_dossiers
     selected_dict: Dict[str, Dict[str, Any]] = {}
+
+    # Priority 1: Multi-Screen Confluence (candidates appearing in >= 2 screens)
+    multi_screen = [c for c in screen_passed_candidates if c.get("screen_count", 1) >= 2]
+    multi_screen.sort(
+        key=lambda c: (
+            c.get("screen_count", 1),
+            len(c.get("screen_flags", [])) == 0,
+            extract_screen_metric(c.get("screen_metrics", {}), ["roce", "roe"]) or 0.0
+        ),
+        reverse=True
+    )
     for c in multi_screen:
-        selected_dict[c["symbol"]] = c
-    for c in bruised_bluechips[:15]:
-        if c["symbol"] not in selected_dict:
+        if len(selected_dict) < effective_limit:
             selected_dict[c["symbol"]] = c
-    for c in growth_stocks[:10]:
-        if c["symbol"] not in selected_dict:
-            selected_dict[c["symbol"]] = c
-    for c in midcap_stocks[:10]:
-        if c["symbol"] not in selected_dict:
+
+    # Helper function to dynamically sort candidates for any given screen
+    def sort_screen_candidates(cands: List[Dict[str, Any]], screen_info: Dict[str, Any]) -> List[Dict[str, Any]]:
+        s_text = f"{screen_info.get('name', '')} {screen_info.get('rubric', '')}".lower()
+        is_value = any(k in s_text for k in ["bruised", "bluechip", "discount", "dividend", "value", "graham"])
+        is_growth = any(k in s_text for k in ["growth", "momentum", "pead", "cagr", "super"])
+
+        if is_value:
+            return sorted(
+                cands,
+                key=lambda c: (
+                    len(c.get("screen_flags", [])) == 0,
+                    extract_screen_metric(c.get("screen_metrics", {}), ["mar cap", "market cap"]) or 0.0,
+                    extract_screen_metric(c.get("screen_metrics", {}), ["down ath", "down %"]) or 0.0
+                ),
+                reverse=True
+            )
+        elif is_growth:
+            return sorted(
+                cands,
+                key=lambda c: (
+                    len(c.get("screen_flags", [])) == 0,
+                    extract_screen_metric(c.get("screen_metrics", {}), ["profit var 3yrs", "profit var 3"]) or 0.0,
+                    extract_screen_metric(c.get("screen_metrics", {}), ["sales latest quarter", "sales preceding year"]) or 0.0,
+                    extract_screen_metric(c.get("screen_metrics", {}), ["roce", "roe"]) or 0.0
+                ),
+                reverse=True
+            )
+        else:
+            return sorted(
+                cands,
+                key=lambda c: (
+                    len(c.get("screen_flags", [])) == 0,
+                    extract_screen_metric(c.get("screen_metrics", {}), ["roce", "roe"]) or 0.0,
+                    extract_screen_metric(c.get("screen_metrics", {}), ["operating cash flow 3years", "cash flow 3years"]) or 0.0
+                ),
+                reverse=True
+            )
+
+    # Priority 2: Per-Screen Proportional Allocation across all configured screens
+    num_screens = max(len(screens), 1)
+    quota_per_screen = max(10, effective_limit // num_screens)
+
+    for screen_info in screens:
+        s_name = screen_info.get("name", "")
+        matching = [
+            c for c in screen_passed_candidates
+            if s_name in c.get("matched_screens", []) and c["symbol"] not in selected_dict
+        ]
+        sorted_matching = sort_screen_candidates(matching, screen_info)
+        for c in sorted_matching[:quota_per_screen]:
+            if c["symbol"] not in selected_dict and len(selected_dict) < effective_limit:
+                selected_dict[c["symbol"]] = c
+
+    # Priority 3: Backlog Fill (if quota remains, fill from any remaining candidates sorted by quality)
+    if len(selected_dict) < effective_limit:
+        remaining = [c for c in screen_passed_candidates if c["symbol"] not in selected_dict]
+        remaining.sort(
+            key=lambda c: (
+                len(c.get("screen_flags", [])) == 0,
+                extract_screen_metric(c.get("screen_metrics", {}), ["roce", "roe"]) or 0.0,
+                extract_screen_metric(c.get("screen_metrics", {}), ["profit var 3yrs", "profit var 3"]) or 0.0
+            ),
+            reverse=True
+        )
+        for c in remaining:
+            if len(selected_dict) >= effective_limit:
+                break
             selected_dict[c["symbol"]] = c
 
     candidates_to_fetch = list(selected_dict.values())
@@ -852,9 +936,8 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         candidates_to_fetch = candidates_to_fetch[:limit]
 
     logger.info(
-        f"Balanced Audit Queue: {len(candidates_to_fetch)} candidates selected for deep dossier analysis: "
-        f"Multi-screen={len(multi_screen)}, Bruised Bluechips={len(bruised_bluechips[:15])}, "
-        f"High Growth={len(growth_stocks[:10])}, Midcap={len(midcap_stocks[:10])}"
+        f"Dynamic Audit Queue: {len(candidates_to_fetch)} candidates selected for deep dossier analysis "
+        f"across {len(screens)} configured screen(s) (Multi-screen={len(multi_screen)})"
     )
 
     # Fetch technofundamental metrics (Minervini Stage + Mansfield RS 50D) in batch
@@ -872,11 +955,30 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
             continue
 
         cand["dossier"] = dossier
+        derived = dossier.get("derived_metrics", {})
+        sm = cand.get("screen_metrics", {})
+
+        # Populate missing derived metrics using screen metrics fallback (from new formula columns)
+        if derived.get("cfo_to_pat_3y") is None:
+            cfo_from_screen = extract_screen_metric(sm, ["operating cash flow 3years", "cash flow 3years"])
+            if cfo_from_screen is not None:
+                derived["cfo_to_pat_3y"] = cfo_from_screen
+
+        if derived.get("other_income_to_pbt_ttm") is None:
+            other_inc_from_screen = extract_screen_metric(sm, ["other income last year", "other income / profit before tax"])
+            if other_inc_from_screen is not None:
+                derived["other_income_to_pbt_ttm"] = other_inc_from_screen
+
+        sales_ratio = extract_screen_metric(sm, ["sales latest quarter", "sales preceding year"])
+        if sales_ratio is not None:
+            derived["sales_qtr_ratio"] = sales_ratio
+            if derived.get("latest_qtr_yoy_sales_pct") is None:
+                derived["latest_qtr_yoy_sales_pct"] = round((sales_ratio - 1.0) * 100.0, 2)
 
         # Attach technofundamental metrics
         cand["technicals"] = tech_data.get(sym, {})
-        dossier.get("derived_metrics", {})["trend_stage"] = cand["technicals"].get("trend_stage", "UNKNOWN")
-        dossier.get("derived_metrics", {})["mansfield_rs_50d"] = cand["technicals"].get("mansfield_rs_50d")
+        derived["trend_stage"] = cand["technicals"].get("trend_stage", "UNKNOWN")
+        derived["mansfield_rs_50d"] = cand["technicals"].get("mansfield_rs_50d")
 
         # Evaluate deep negative flags (CFO/PAT, Debt/Equity, QoQ/YoY margins, promoter changes)
         flags, flag_reasons = evaluate_negative_flags(
@@ -919,21 +1021,34 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
             flag_reasons.update(f_reasons)
 
         # Screen-Conditional Technofundamental Policy:
-        # Momentum/Growth screens require non-Stage 4; Value/Bruised Bluechips allow downtrends/basing
+        # Pure breakout/momentum screens require non-Stage 4.
+        # But if a stock is discounted >= 25% from ATH, or screen targets discounted/value/consolidation setups:
+        # Trading below 200 EMA is expected during market consolidation. Do NOT penalize with a negative kill-switch flag.
         matched_screens = cand.get("matched_screens", [])
         is_value_screen = any(
             kw in s.lower()
             for s in matched_screens
             for kw in ["bruised", "discount", "dividend", "value", "graham"]
         )
+        down_ath = extract_screen_metric(cand.get("screen_metrics", {}), ["down ath", "down from ath", "discounted from atm"]) or 0.0
+        is_discounted_setup = (
+            down_ath >= 25.0
+            or is_value_screen
+            or ("NEG_STAGE_4_DOWNTREND" in exempt_flags)
+            or any("discount" in s.lower() for s in matched_screens)
+        )
+
         trend_stage = cand["technicals"].get("trend_stage", "UNKNOWN")
 
-        if not is_value_screen and trend_stage == "STAGE_4_DOWNTREND":
-            logger.info(f"{sym}: Flagging pure growth/momentum candidate due to STAGE_4_DOWNTREND.")
-            flags.append("NEG_STAGE_4_DOWNTREND")
-            flag_reasons["NEG_STAGE_4_DOWNTREND"] = (
-                "Stage 4 downtrend (CMP < EMA50 < EMA200 with falling 200 EMA) not permitted on pure momentum/growth screens"
-            )
+        if trend_stage == "STAGE_4_DOWNTREND":
+            if is_discounted_setup:
+                logger.info(f"{sym}: Down {down_ath:.1f}% from ATH below 200 EMA during market consolidation. Tagged as STAGE_4_DISCOUNT (not penalized as a negative flag).")
+            else:
+                logger.info(f"{sym}: Flagging pure momentum candidate due to STAGE_4_DOWNTREND.")
+                flags.append("NEG_STAGE_4_DOWNTREND")
+                flag_reasons["NEG_STAGE_4_DOWNTREND"] = (
+                    "Stage 4 downtrend (CMP < EMA50 < EMA200 with falling 200 EMA) not permitted on pure momentum screens"
+                )
 
         cand["negative_flags"] = flags
         cand["negative_flag_reasons"] = flag_reasons
@@ -941,7 +1056,7 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         if len(flags) > max_neg_flags:
             # Check for Soft-Gate Exemption (Large-Cap / Bruised Bluechip with cyclical headwinds)
             mcap_val = dossier.get("derived_metrics", {}).get("market_cap_cr") or dossier.get("top_ratios", {}).get("Market Cap") or 0.0
-            is_bluechip = mcap_val >= 25000 or ("Bruised Bluechips" in cand.get("matched_screens", []))
+            is_bluechip = mcap_val >= 25000 or any("bluechip" in s.lower() for s in cand.get("matched_screens", []))
             has_fatal = "NEG_NET_LOSS" in flags or "NEG_LOW_MCAP" in flags
             pledge_pct = dossier.get("derived_metrics", {}).get("promoter_pledge_pct", 0.0) or 0.0
 
@@ -1089,5 +1204,6 @@ if __name__ == "__main__":
     import argparse
     parser_cli = argparse.ArgumentParser(description="Stage 1: Screener Batch Preparation & Quant Gate")
     parser_cli.add_argument("--limit", type=int, default=None, help="Limit number of highest-confluence candidates to process")
+    parser_cli.add_argument("--refresh-screens", action="store_true", help="Invalidate screen caches and fetch screens live")
     args = parser_cli.parse_args()
-    run_stage_1_prep(limit=args.limit)
+    run_stage_1_prep(limit=args.limit, refresh_screens=args.refresh_screens)

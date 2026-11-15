@@ -70,7 +70,7 @@ Only if the company survives the Bear and Forensic audit, evaluate how this inve
    - Temporarily beaten down due to broader market consolidation.
    - High operating leverage means when the market enters a bull run, asset volumes and transaction velocity surge, compounding earnings at 25–35%+.
 
-### Step 4: Assign Final Verdict & Conviction Score
+### Step 4: Assign Final Verdict & Return Pure Structured JSON
 Assign one of 4 standardized verdicts:
 - **`STRONG_BUY_WATCH`**: High growth (>20% CAGR) or high rerating potential (>20% IRR), strong cash conversion (>75% CFO/PAT), clear positive FY27/FY28 guidance, clean governance, high margin of safety. (Conviction: 8–10)
 - **`ACCUMULATE_ON_DIP`**: Resilient moat, healthy balance sheet and cash flows, but rich valuation (high P/E) requiring market dip for margin of safety, or near-term margin consolidation. Prime candidate to accumulate on pullbacks. (Conviction: 7–8)
@@ -81,86 +81,28 @@ Define 2 to 3 pre-committed thesis invalidation triggers (kill-switches).
 
 ---
 
-## Output & Persistence Requirements
+## Output Format Requirements (STRICT PURE JSON)
 
-1. **Append to Markdown Journal (`logs/screener_audit_YYYY-MM-DD.md`)**:
-```markdown
-### [VERDICT] SYMBOL - Company Name
-- **Date**: YYYY-MM-DD
-- **Conviction Score**: X/10 | **Alpha Pathway**: [PE_RERATING | EARNINGS_COMPOUNDER | CAPEX_INFLECTION | CYCLICAL_MARKET_PROXY]
-- **Expected 3Y CAGR**: X% (Return Math: X% earnings growth + X% rerating)
-- **Margin of Safety**: [High / Moderate / Low - discount from 52W High / ATH]
-- **Matched Screens**: Screen 1, Screen 2 (Hits: N)
-- **Warning Flags**: [Flags or None] - [Assessment: Transient vs Structural]
-- **Key Metrics**: CMP: ₹X | P/E: X | M.Cap: ₹X Cr | ROCE: X% | 3Y CFO/PAT: Xx | 3Y Sales CAGR: X% | 3Y PAT CAGR: X%
-- **Moat & Growth Drivers**: [2-3 sentences explaining business moat and market positioning]
-- **FY27/FY28 Management Guidance**: [Summary of concall targets and Capex plans]
-- **Risks & Red Flags**: [Forensic/governance check results]
-- **Action Plan**: [Clear instruction on entry zone or monitoring trigger]
----
-```
+You must output **ONLY a single compact JSON object**. 
+Do **NOT** write files, do **NOT** generate markdown audit headers, and do **NOT** output conversational text. The orchestrator workflow parses your JSON directly and deterministically handles audit persistence and history checkpointing.
 
-2. **Append to Machine-Readable JSONL (`logs/screener_audit_YYYY-MM-DD.jsonl`)**:
-Append a single JSON line:
+Output matching this exact JSON schema:
 ```json
 {
-  "timestamp": "ISO_TIMESTAMP",
-  "symbol": "SYMBOL",
-  "name": "Company Name",
+  "ticker": "SYMBOL",
   "verdict": "STRONG_BUY_WATCH|ACCUMULATE_ON_DIP|HOLD_WATCH|REJECT",
-  "conviction_score": 9,
-  "alpha_pathway": "PE_RERATING|EARNINGS_COMPOUNDER|CAPEX_INFLECTION|CYCLICAL_MARKET_PROXY",
-  "expected_cagr_3y": "22-25%",
-  "return_math_breakdown": "16% earnings growth + 6% P/E rerating",
-  "margin_of_safety": "High (-26% from 52W High)",
-  "screen_count": 2,
-  "matched_screens": ["Bruised Bluechips", "Super High Growth"],
-  "negative_flags": [],
-  "flag_assessment": "Clean quant profile",
-  "metrics": {
-    "current_price": 3165.0,
-    "pe": 88.1,
-    "market_cap_cr": 168779.0,
-    "roce_pct": 28.3,
-    "cfo_to_pat_3y": 1.10,
-    "debt_to_equity": 0.30
-  },
-  "thesis": "...",
-  "guidance_summary": "...",
-  "risks_summary": "..."
+  "conviction_score": 8,
+  "pathway_id": "PE_RERATING|EARNINGS_COMPOUNDER|CAPEX_INFLECTION|CYCLICAL_MARKET_PROXY",
+  "expected_cagr_3y": "20-25%",
+  "cagr_breakdown": "Explicit return math: (EPS growth % + P/E delta % = Total CAGR)",
+  "margin_of_safety": "High|Moderate|Low with brief justification",
+  "thesis": "Concise 1-2 sentence core investment thesis",
+  "guidance_audit": "Summary of management guidance, concall analyst tension, and capex roadmap",
+  "bear_risks": "Summary of forensic risks, multiple derating risks, and cyclical headwinds",
+  "kill_switches": [
+    "Trigger 1",
+    "Trigger 2",
+    "Trigger 3"
+  ]
 }
 ```
-  "screen_count": 2,
-  "matched_screens": ["Midcap Opportunity", "Super High Growth"],
-  "negative_flags": [],
-  "flag_assessment": "Clean quant profile",
-  "metrics": {
-    "current_price": 3165.0,
-    "pe": 88.1,
-    "market_cap_cr": 168779.0,
-    "roce_pct": 28.3,
-    "cfo_to_pat_3y": 1.10,
-    "debt_to_equity": 0.30,
-    "sales_growth_3y": 35.0,
-    "profit_growth_3y": 71.0
-  },
-  "thesis": "Concise 1-2 sentence thesis on why this stock compounder succeeds.",
-  "guidance_summary": "Management guided for 25% store expansion and 20%+ revenue CAGR through FY27.",
-  "risks_summary": "High valuation multiple leaves little margin for execution slip-ups."
-}
-```
-
-3. **Checkpoint `data/reviewed_history.json`**:
-Update `data/reviewed_history.json` immediately for this symbol:
-```json
-{
-  "SYMBOL": {
-    "last_reviewed_at": "ISO_TIMESTAMP",
-    "screen_count": N,
-    "verdict": "VERDICT",
-    "matched_screens": ["..."],
-    "metrics": { ... }
-  }
-}
-```
-This ensures that if the agent run is interrupted, progress is never lost and future Stage 1 prep runs enforce the 45-day cooldown.

@@ -20,35 +20,15 @@
   },
   "screens": [
     {
-      "id": "3902841",
-      "name": "Midcap Opportunity",
-      "url": "https://www.screener.in/screens/3902841/midcap-opportunity/",
-      "rubric": "Identify midcap compounders with resilient revenue growth, healthy cash conversion, and reasonable valuations.",
-      "conditional_overrides": {
-        "min_market_cap_cr": 5000,
-        "min_roce_pct": 12.0
-      }
-    },
-    {
-      "id": "1735153",
-      "name": "Super High Growth Companies in Long Term",
-      "url": "https://www.screener.in/screens/1735153/super-high-growth-companies-in-long-term/",
-      "rubric": "Verify sustained high growth (>20% 3Y/5Y CAGR) with strong balance sheet, cash conversion (>70%), and reinvestment moat.",
-      "conditional_overrides": {
-        "min_market_cap_cr": 5000,
-        "min_roce_pct": 15.0,
-        "min_cfo_to_pat_3y": 0.70
-      }
-    },
-    {
-      "id": "2306282",
-      "name": "Bruised Bluechips",
-      "url": "https://www.screener.in/screens/2306282/bruised-blue-chips/",
-      "rubric": "Verify whether the PE discount vs 5Y median is temporary cyclical/sentiment pressure rather than structural moat decay.",
+      "id": "4095427",
+      "name": "Mid/Smallcap Growth Opportunities",
+      "url": "https://www.screener.in/screens/4095427/midsmallcap-growth-opportunities/",
+      "rubric": "High-growth compounders (5Y Sales >15%, 3Y/5Y Profit >15%, ROCE/ROE >15%) trading at a 30%+ discount from ATH during market consolidation.",
       "conditional_overrides": {
         "min_market_cap_cr": 5000,
         "min_roce_pct": 12.0,
-        "exempt_flags": ["NEG_LATEST_QTR_PAT", "NEG_OPM_CONTRACTION"]
+        "min_cfo_to_pat_3y": 0.60,
+        "exempt_flags": ["NEG_STAGE_4_DOWNTREND"]
       }
     }
   ]

@@ -749,6 +749,108 @@
       ]
     }
   },
+  "ratios": {
+    "headers": [
+      "Mar 2015",
+      "Mar 2016",
+      "Mar 2017",
+      "Mar 2018",
+      "Mar 2019",
+      "Mar 2020",
+      "Mar 2021",
+      "Mar 2022",
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026"
+    ],
+    "data": {
+      "Debtor Days": [
+        42.0,
+        41.0,
+        40.0,
+        37.0,
+        45.0,
+        68.0,
+        92.0,
+        77.0,
+        62.0,
+        68.0,
+        67.0,
+        71.0
+      ],
+      "Inventory Days": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "Days Payable": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "Cash Conversion Cycle": [
+        42.0,
+        41.0,
+        40.0,
+        37.0,
+        45.0,
+        68.0,
+        92.0,
+        77.0,
+        62.0,
+        68.0,
+        67.0,
+        71.0
+      ],
+      "Working Capital Days": [
+        -47.0,
+        -39.0,
+        -52.0,
+        -44.0,
+        -106.0,
+        -35.0,
+        -61.0,
+        -62.0,
+        -43.0,
+        -45.0,
+        -37.0,
+        -54.0
+      ],
+      "ROCE %": [
+        8.0,
+        7.0,
+        9.0,
+        9.0,
+        7.0,
+        10.0,
+        9.0,
+        9.0,
+        10.0,
+        10.0,
+        11.0,
+        9.0
+      ]
+    }
+  },
   "shareholding": {
     "headers": [
       "Dec 2023",
@@ -859,6 +961,12 @@
     "roe_pct": 15.1,
     "cfo_to_pat_3y": 1.73,
     "cfo_to_ebitda_3y": 0.86,
+    "debtor_days_latest": 71.0,
+    "debtor_days_3y_avg": 65.7,
+    "debtor_days_delta": 5.3,
+    "cwip_ratio_latest": 0.28,
+    "cwip_ratio_prior": 0.27,
+    "other_income_to_pbt_ttm": 0.29,
     "debt_to_equity": 1.31,
     "qoq_opm_delta_bps": -300.0,
     "latest_qtr_yoy_opm_bps": 0.0,

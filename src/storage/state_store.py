@@ -1,5 +1,5 @@
 import logging
-from typing import Set
+from typing import Set, List
 import requests
 from config.settings import WORKER_URL, INTERNAL_SECRET, NSE_HEADERS
 
@@ -49,6 +49,23 @@ class StateStore:
     def is_ticker_silenced(self, symbol: str) -> bool:
         """Instant O(1) check if ticker is permabanned or in active 30-day cooldown."""
         return symbol.strip().upper() in self.silenced_set
+
+    def get_deep_dive_queue(self) -> List[str]:
+        """Fetches pending deep-dive requests from Cloudflare Worker /api/deep-dive-queue."""
+        if not self.worker_url:
+            return []
+        api_url = f"{self.worker_url}/api/deep-dive-queue"
+        headers = dict(NSE_HEADERS)
+        if self.secret:
+            headers["X-Internal-Secret"] = self.secret
+        try:
+            resp = requests.get(api_url, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                return [s.strip().upper() for s in data.get("queued", [])]
+        except Exception as e:
+            logger.warning(f"Failed to fetch deep dive queue from Worker: {e}")
+        return []
 
     def is_already_alerted_today(self, symbol: str, signal_type: str) -> bool:
         return False

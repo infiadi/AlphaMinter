@@ -5,7 +5,7 @@
     "max_pages_per_screen": 10,
     "max_negative_flags_allowed": 1,
     "max_dossiers_to_fetch": 30,
-    "parallel_subagents_batch_size": 4
+    "parallel_subagents_batch_size": 1
   },
   "global_filters": {
     "min_market_cap_cr": 5000,

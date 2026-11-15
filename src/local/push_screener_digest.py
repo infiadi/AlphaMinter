@@ -112,19 +112,8 @@ def format_digest_card(record: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         f"<i>{guidance}</i>"
     )
 
-    markup = {
-        "inline_keyboard": [
-            [
-                {"text": "📈 TradingView", "url": f"https://www.tradingview.com/chart/?symbol=NSE:{symbol}"},
-                {"text": "📊 Screener", "url": f"https://www.screener.in/company/{symbol}/"}
-            ],
-            [
-                {"text": "⭐ Watchlist", "callback_data": f"WATCH:{symbol}"},
-                {"text": "❌ Drop 30D", "callback_data": f"DROP:{symbol}"},
-                {"text": "🚫 Permaban", "callback_data": f"BAN:{symbol}"}
-            ]
-        ]
-    }
+    dispatcher = TelegramDispatcher()
+    markup = dispatcher.build_triage_buttons(symbol)
 
     return msg, markup
 

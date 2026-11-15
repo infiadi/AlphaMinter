@@ -35,27 +35,28 @@ You receive a JSON object representing a single surviving high-confluence stock:
 
 ---
 
-## Execution Protocol
+## Execution Protocol (Bear-First Architecture)
 
-### Step 1: Synthesize Pre-Parsed Financial Dossier & Sector Backdrop
-Evaluate the business through the **4 Core Investment Pillars**:
-1. **Value for Money**: Evaluate valuation metrics (P/E relative to 5Y median, Price to Intrinsic Value `P/I.V.`, Price to Book `CMP/BV`). Is the business priced at an attractive or fair multiple relative to its compounding rate?
-2. **Growth in Uptrend**: Future growth should be in an uptrend. Verify 3Y/5Y Sales and Profit CAGR and check whether the order book or demand cycle supports continuing expansion.
-3. **Margin of Safety (Crucial)**:
-   - Check `Down %` from 52-Week High and `Down ATH %`.
-   - **DO NOT** assign `STRONG_BUY_WATCH` to a stock trading near its All-Time High (`Down % < 3–5%`) with an excessive valuation multiple (`P/E > 70x`) — there is **zero margin of safety**.
-   - If a large-cap bluechip (like TCS, ITC, HUL, etc.) is bruised (-15% to -35% from ATH) due to temporary sectoral or cyclical headwinds, this offers **high Margin of Safety** if the underlying franchise and balance sheet remain intact.
-4. **Value Trap & Loss-Making Avoidance (Vodafone Idea Filter)**: Confirm positive net profit (TTM PAT > 0), healthy debt levels, and robust operating cash flow. Reject cash-burning turnaround traps.
+### Step 1: Forensic & Bear Kill-Switch Audit (FIRST)
+Before looking at growth or the bull thesis, actively search for reasons to **KILL this trade**:
+1. **Multiple Derating Risk**: If current P/E > 40x–50x, will multiple compression (e.g. from 50x down to 35x) negate 20% EPS growth and destroy investor return?
+2. **Working Capital & Receivables**: Inspect `Debtor Days` and `debtor_days_delta`. Are trade receivables expanding much faster than sales? Is cash trapped in working capital?
+3. **Capex & CWIP Bloat**: Check `CWIP / Net Block`. Is capital tied up in unfinished projects for years without incremental revenue generation?
+4. **Promoter Integrity & Pledging**: Check promoter holding trends and pledge percentage. If pledge > 5% or promoter holding declined by > 2% QoQ, flag governance risk.
+5. **Cyclicality vs Moat Decay**: If analyzing a bruised bluechip (-15% to -35% from ATH), determine if the business is suffering from a transient cyclical downturn (an opportunity) or structural moat obsolescence (a value trap).
 
-- **Sector-Specific Financial Assessment**:
-  - **Financial Institutions (Banks, NBFCs, AMCs, Insurance)**: Manufacturing ROCE and 3Y CFO/PAT are NOT applicable. Evaluate ROE (target >= 12–15%), Net Interest Margins (NIM), NPA / credit quality trends, and credit growth.
-  - **Non-Financials**: Check 3Y/5Y Sales and Profit CAGR against ROCE (>15%) and 3Y CFO/PAT conversion (>60–75%).
-- **Multi-Year Resilience & "When in Doubt" Qualitative Evaluation**:
-  - If a large-cap bluechip is flagged for a quarterly dip or temporary OPM contraction, determine whether it is a cyclical entry opportunity or structural decay. When in doubt, lean on the company's 10-year moat and forward guidance.
-- **Screen Rubrics**: Evaluate the company against every rubric in `rubrics`.
+### Step 2: Concall Q&A & Guidance Grounding (Targeted Web Search)
+Perform exactly 1 or 2 targeted web searches using `search_web`:
+1. `"<SYMBOL>" concall highlights OR Q&A OR guidance`
+2. `"<SYMBOL>" latest quarterly results red flags`
 
-### Step 2: The 20%+ CAGR Return Math Check (Your Core Hurdle)
-Evaluate how this investment realistically achieves a **>= 20% CAGR total return** over the next 2–3 years through one of the 4 primary alpha pathways:
+Focus specifically on:
+- **Analyst Tension in Q&A**: Did top brokerage analysts (Kotak, Motilal, Jefferies, ICICI Sec) press management on pricing cuts, inventory buildup, or order execution delays?
+- **Tone & Evasion**: Did management provide direct numbers or use deflective phrases ("macro headwinds", "wait-and-watch")?
+- **FY27/FY28 Concrete Targets**: Explicit guidance for revenue CAGR %, EBITDA margin bps, and Capex rollout.
+
+### Step 3: The 20%+ CAGR Return Math Check (Your Core Hurdle)
+Only if the company survives the Bear and Forensic audit, evaluate how this investment realistically achieves a **>= 20% CAGR total return** over the next 2–3 years through one of the 4 primary alpha pathways:
 1. **Valuation Expansion / P/E Rerating on Solid Compounders**:
    - Business grows earnings at 14–16% CAGR, but is bought at a discount to 5Y median or intrinsic value.
    - P/E rerates upward (+20–30% total), adding ~5–8% CAGR to deliver **>= 20% total return**.
@@ -69,21 +70,14 @@ Evaluate how this investment realistically achieves a **>= 20% CAGR total return
    - Temporarily beaten down due to broader market consolidation.
    - High operating leverage means when the market enters a bull run, asset volumes and transaction velocity surge, compounding earnings at 25–35%+.
 
-### Step 3: Targeted Web Grounding (1–2 Searches Maximum)
-Perform exactly 1 or 2 targeted web searches using `search_web`:
-1. `"<SYMBOL>" concall guidance FY27 OR FY28`
-2. `"<SYMBOL>" latest quarterly results red flags`
-
-Focus on:
-- Concrete forward management guidance for FY27 or FY28 (revenue growth %, margin target %, Capex).
-- Any forensic accounting concerns, auditor qualifications, SEBI inquiries, or promoter disputes.
-
 ### Step 4: Assign Final Verdict & Conviction Score
 Assign one of 4 standardized verdicts:
 - **`STRONG_BUY_WATCH`**: High growth (>20% CAGR) or high rerating potential (>20% IRR), strong cash conversion (>75% CFO/PAT), clear positive FY27/FY28 guidance, clean governance, high margin of safety. (Conviction: 8–10)
 - **`ACCUMULATE_ON_DIP`**: Resilient moat, healthy balance sheet and cash flows, but rich valuation (high P/E) requiring market dip for margin of safety, or near-term margin consolidation. Prime candidate to accumulate on pullbacks. (Conviction: 7–8)
 - **`HOLD_WATCH`**: Good business but growth decelerating, multiple derating risk, guidance vague, or ongoing turnaround requiring confirmation. (Conviction: 5–6)
 - **`REJECT`**: Structural headwinds, weak CFO conversion (<50%), negative forward guidance, or unaddressed corporate governance risks. (Conviction: 1–4)
+
+Define 2 to 3 pre-committed thesis invalidation triggers (kill-switches).
 
 ---
 

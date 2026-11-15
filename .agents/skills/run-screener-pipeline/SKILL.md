@@ -41,21 +41,21 @@ Inspect `candidates`:
 
 ---
 
-## Step 3: Parallel Subagent Batches (3 to 5 at a time)
-Process surviving candidate stocks in parallel batches of **3 to 5 concurrent subagents**:
+## Step 3: Sequential Subagent Audits (1 Stock at a Time)
+Process surviving candidate stocks sequentially (1 subagent at a time for atomic checkpointing):
 
-1. Divide `candidates` into slices of 3 to 5 stocks (e.g. `batch = candidates[i:i+4]`).
-2. For each stock in the current batch, call `invoke_subagent` concurrently:
+1. Read the pre-rendered batches `data/prepared_queues/active_batch_1.json`, `active_batch_2.json`, etc.
+2. For each batch item (1 stock), call `invoke_subagent`:
    - `TypeName`: `"equity-analyst"`
    - `Role`: `"Equity Analyst - <SYMBOL>"`
-   - `Prompt`: Provide that stock's complete JSON dossier and specific due diligence directives:
-     - **Sector & Industry Analysis**: Analyze sectoral tailwinds/headwinds, competitive intensity, capex cycles, and structural drivers.
-     - **Sector-Specific Metrics**: For Financials (Banks/NBFCs/AMCs), evaluate ROE, NIM, asset quality (GNPA/NNPA), and credit growth rather than manufacturing ROCE or CFO/PAT.
-     - **Multi-Year Perspective**: Recognize that a single transient or cyclical negative quarter does not break a multi-year compounder (check 3Y/5Y Sales and Profit CAGR).
-     - **Targeted Web Searches**: Perform 1–2 web searches on recent concall FY27/FY28 management guidance, expansion plans, and any forensic red flags / SEBI / tax scrutiny.
-3. Wait for all subagents in the batch to report back.
-4. Record their verdicts into `logs/screener_audit_YYYY-MM-DD.md`, `logs/screener_audit_YYYY-MM-DD.jsonl`, and checkpoint `data/reviewed_history.json`.
-5. Proceed to the next batch until all candidates are processed.
+   - `Prompt`: Provide the pre-rendered prompt from `prompt_item["prompt"]` enforcing the **Bear-First Protocol**:
+     - **Forensic & Bear Kill-Switch Critique FIRST**: Test multiple derating risks, working capital bloat, and reasons to KILL the trade.
+     - **Concall Q&A & Guidance Grounding**: 1 targeted web search (`"<SYMBOL>" concall highlights OR Q&A OR guidance`).
+     - **20%+ CAGR Growth Math**: Compounding vectors (EPS growth + multiple rerating).
+     - **Final Verdict**: `STRONG_BUY_WATCH`, `ACCUMULATE_ON_DIP`, `HOLD_WATCH`, or `REJECT`.
+3. Wait for the subagent to report back.
+4. Record verdict into `logs/screener_audit_YYYY-MM-DD.md`, `logs/screener_audit_YYYY-MM-DD.jsonl`, and atomically checkpoint `data/reviewed_history.json`.
+5. Proceed to the next stock until all candidates are processed.
 
 ---
 

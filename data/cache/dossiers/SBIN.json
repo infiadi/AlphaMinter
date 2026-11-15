@@ -781,6 +781,38 @@
       ]
     }
   },
+  "ratios": {
+    "headers": [
+      "Mar 2015",
+      "Mar 2016",
+      "Mar 2017",
+      "Mar 2018",
+      "Mar 2019",
+      "Mar 2020",
+      "Mar 2021",
+      "Mar 2022",
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026"
+    ],
+    "data": {
+      "ROE %": [
+        11.0,
+        7.0,
+        0.0,
+        -2.0,
+        1.0,
+        7.0,
+        9.0,
+        12.0,
+        17.0,
+        17.0,
+        17.0,
+        15.0
+      ]
+    }
+  },
   "shareholding": {
     "headers": [
       "Dec 2023",
@@ -891,6 +923,12 @@
     "roe_pct": 15.4,
     "cfo_to_pat_3y": 0.4,
     "cfo_to_ebitda_3y": null,
+    "debtor_days_latest": null,
+    "debtor_days_3y_avg": null,
+    "debtor_days_delta": null,
+    "cwip_ratio_latest": 0.0,
+    "cwip_ratio_prior": 0.0,
+    "other_income_to_pbt_ttm": 1.65,
     "debt_to_equity": null,
     "qoq_opm_delta_bps": null,
     "latest_qtr_yoy_opm_bps": null,

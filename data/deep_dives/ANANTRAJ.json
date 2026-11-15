@@ -1,0 +1,90 @@
+{
+  "symbol": "ANANTRAJ",
+  "name": "Anant Raj Ltd",
+  "sector": "Consumer Discretionary",
+  "industry": "Residential, Commercial Projects",
+  "about": "Anant Raj Ltd was incorporated in 1985 as Anant Raj Clay Products by Ashok Sarin. It is primarily engaged in the development and construction of IT parks, hospitality projects, SEZs, office complexes, shopping malls and residential projects in the State of Delhi, Haryana, Andhra Pradesh, Rajasthan and NCR.The Company has successfully developed more than 20 msf of real estate projects in the Housing, Commercial, IT Parks, Shopping Malls, Hospitality, Residential and Affordable Housing sub-segments.[1][2]",
+  "initial_deep_dive_date": "2026-11-15",
+  "last_updated_date": "2026-11-15",
+  "conviction_score": 8,
+  "verdict": "STRONG_BUY_CONVICTION",
+  "target_3y_cagr": "56.5%",
+  "target_3y_price": 1834.5,
+  "return_mathematics": {
+    "entry_cmp": 479.0,
+    "entry_pe": 28.8,
+    "market_cap_cr": 17222.0,
+    "roce_pct": 12.1,
+    "roe_pct": 11.2,
+    "alpha_pathway": "CAPEX_INFLECTION",
+    "projected_eps_cagr_pct": 54.0,
+    "projected_exit_pe": 30.2,
+    "expected_3y_cagr_pct": 56.5,
+    "target_3y_price": 1834.5,
+    "anti_derating_stress_test": {
+      "stress_exit_pe": 21.6,
+      "stress_cagr_pct": 39.9,
+      "is_derating_protected": true
+    },
+    "pathway_rationale": "Significant CWIP (₹227 Cr, 12.3% of Fixed Assets) transitioning to commercialization over FY26–FY28 unlocks operating leverage.",
+    "entry_zones": {
+      "aggressive_zone": "₹455.0 - ₹488.6",
+      "dip_accumulation_zone": "₹407.1 - ₹440.7",
+      "hard_support": "₹359.2"
+    }
+  },
+  "forensic_audit": {
+    "forensic_score": 7,
+    "cfo_to_pat_3y": -0.13,
+    "debt_to_equity": 0.13,
+    "promoter_pledge_pct": 0.0,
+    "promoter_qoq_change_pct": 0.0,
+    "is_financial_sector": false,
+    "red_flags": [
+      "Low 3Y CFO/PAT conversion: -0.13x (< 0.50x)"
+    ],
+    "audit_verdict": "MODERATE_CAUTION"
+  },
+  "guidance_tracker": {
+    "stated_capex_cwip_cr": 227.0,
+    "fy27_target_outlook": "20-25%+ volume growth supported by capacity monetization",
+    "capacity_milestones": [
+      {
+        "milestone": "Active Capex Commercialization",
+        "cwip_allocated_cr": 227.0,
+        "target_period": "FY26 - FY27",
+        "status": "MONITORING"
+      }
+    ]
+  },
+  "invalidation_triggers": [
+    "Exit if Operating Profit Margin (OPM) drops by > 300 bps for two consecutive quarters without raw material inflation relief.",
+    "Exit if 3Y cumulative CFO/PAT drops below 0.55x (indicates aggressive revenue recognition or stuck inventory).",
+    "Exit if Debt-to-Equity rises above 0.75x or Promoter Pledge increases above 5.0%.",
+    "Exit if management delays stated Capex / capacity commercialization timeline by > 3 quarters."
+  ],
+  "entry_zones": {
+    "aggressive_zone": "₹455.0 - ₹488.6",
+    "dip_accumulation_zone": "₹407.1 - ₹440.7",
+    "hard_support": "₹359.2"
+  },
+  "monthly_updates": [
+    {
+      "review_date": "2026-11-15",
+      "days_since_prior_review": 0,
+      "price_delta": {
+        "baseline_cmp": 479.0,
+        "current_cmp": 479.0,
+        "change_pct": 0.0
+      },
+      "valuation_delta": {
+        "baseline_pe": 28.8,
+        "current_pe": 28.8
+      },
+      "latest_quarter_audited": "Sep 2026",
+      "invalidation_triggers_hit": [],
+      "thesis_status": "INTACT",
+      "action_recommended": "CONTINUE ACCUMULATING"
+    }
+  ]
+}

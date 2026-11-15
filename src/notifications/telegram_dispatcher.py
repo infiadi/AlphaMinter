@@ -46,8 +46,9 @@ class TelegramDispatcher:
     def build_triage_buttons(self, symbol: str) -> Dict:
         """
         Builds 1-tap inline triage buttons:
-        - Row 1: TradingView Chart Link + Screener Link
-        - Row 2: 1-Tap Callbacks (Watchlist, Drop 30D, Permaban)
+        - Row 1: External Links (TradingView, Screener)
+        - Row 2: High-Conviction Actions (🔬 Deep Dive, ⭐ Watchlist)
+        - Row 3: Triage / Filtering (❌ Drop 30D, 🚫 Permaban)
         """
         symbol = symbol.strip().upper()
         return {
@@ -57,12 +58,43 @@ class TelegramDispatcher:
                     {"text": "📊 Screener", "url": f"https://www.screener.in/company/{symbol}/"}
                 ],
                 [
-                    {"text": "⭐ Watchlist", "callback_data": f"WATCH:{symbol}"},
+                    {"text": "🔬 Deep Dive", "callback_data": f"DEEPDIVE:{symbol}"},
+                    {"text": "⭐ Watchlist", "callback_data": f"WATCH:{symbol}"}
+                ],
+                [
                     {"text": "❌ Drop 30D", "callback_data": f"DROP:{symbol}"},
                     {"text": "🚫 Permaban", "callback_data": f"BAN:{symbol}"}
                 ]
             ]
         }
+
+    def send_deep_dive_report(self, symbol: str, html_text: str) -> bool:
+        """Sends an institutional deep dive alert card to Telegram."""
+        buttons = {
+            "inline_keyboard": [
+                [
+                    {"text": "📈 TradingView", "url": f"https://www.tradingview.com/chart/?symbol=NSE:{symbol}"},
+                    {"text": "📊 Screener", "url": f"https://www.screener.in/company/{symbol}/"}
+                ],
+                [
+                    {"text": "⭐ Add Watchlist", "callback_data": f"WATCH:{symbol}"},
+                    {"text": "❌ Drop 30D", "callback_data": f"DROP:{symbol}"}
+                ]
+            ]
+        }
+        return self.send_message(html_text, reply_markup=buttons)
+
+    def send_monthly_delta_card(self, symbol: str, html_text: str) -> bool:
+        """Sends a 30-day monthly delta health-check alert card to Telegram."""
+        buttons = {
+            "inline_keyboard": [
+                [
+                    {"text": "📈 TradingView", "url": f"https://www.tradingview.com/chart/?symbol=NSE:{symbol}"},
+                    {"text": "📊 Screener", "url": f"https://www.screener.in/company/{symbol}/"}
+                ]
+            ]
+        }
+        return self.send_message(html_text, reply_markup=buttons)
 
     def send_stock_alert(self, title: str, symbol: str, company: str, metrics: List[str], thesis: str, buttons: bool = True):
         """Standardized high-clarity stock alert card for Android."""

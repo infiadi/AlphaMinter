@@ -393,6 +393,13 @@ class CustomScreenerParser:
 
         if not resp or resp.status_code != 200:
             logger.error(f"Could not retrieve company page for {symbol} (HTTP {resp.status_code if resp else 'No Resp'}).")
+            if cache_file.exists():
+                logger.info(f"Falling back to existing disk cache for {symbol} due to network unavailability.")
+                try:
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception:
+                    pass
             return None
 
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -489,6 +496,7 @@ class CustomScreenerParser:
         pl_headers, profit_loss = parse_table_section("profit-loss")
         bs_headers, balance_sheet = parse_table_section("balance-sheet")
         cf_headers, cash_flows = parse_table_section("cash-flow")
+        r_headers, ratios = parse_table_section("ratios")
         sh_headers, shareholding = parse_table_section("shareholding")
 
         # 7. Calculate Derived Ratios
@@ -498,6 +506,7 @@ class CustomScreenerParser:
             profit_loss=profit_loss,
             balance_sheet=balance_sheet,
             cash_flows=cash_flows,
+            ratios=ratios,
             shareholding=shareholding,
             sector=sector,
             industry=industry,
@@ -531,6 +540,10 @@ class CustomScreenerParser:
                 "headers": cf_headers,
                 "data": cash_flows
             },
+            "ratios": {
+                "headers": r_headers,
+                "data": ratios
+            },
             "shareholding": {
                 "headers": sh_headers,
                 "data": shareholding
@@ -545,6 +558,7 @@ class CustomScreenerParser:
         profit_loss: Dict[str, List[Optional[float]]],
         balance_sheet: Dict[str, List[Optional[float]]],
         cash_flows: Dict[str, List[Optional[float]]],
+        ratios: Dict[str, List[Optional[float]]],
         shareholding: Dict[str, List[Optional[float]]],
         sector: str,
         industry: str,
@@ -573,6 +587,49 @@ class CustomScreenerParser:
         cfo_to_ebitda_3y = None
         if cfo_3y is not None and ebitda_3y is not None and ebitda_3y > 0:
             cfo_to_ebitda_3y = round(cfo_3y / ebitda_3y, 2)
+
+        # 2b. Debtor Days (from static #ratios table)
+        debtor_days_row = ratios.get("Debtor Days") or []
+        valid_debtor_days = [v for v in debtor_days_row if v is not None]
+        debtor_days_latest = valid_debtor_days[-1] if valid_debtor_days else None
+        debtor_days_3y_avg = None
+        debtor_days_delta = None
+        if len(valid_debtor_days) >= 2:
+            prior_vals = valid_debtor_days[:-1]
+            prior_slice = prior_vals[-3:]
+            debtor_days_3y_avg = round(sum(prior_slice) / len(prior_slice), 1)
+            debtor_days_delta = round(debtor_days_latest - debtor_days_3y_avg, 1)
+
+        # 2c. CWIP to Net Fixed Assets
+        cwip_row = balance_sheet.get("CWIP") or []
+        fixed_assets_row = balance_sheet.get("Fixed Assets") or []
+        cwip_ratio_latest = None
+        cwip_ratio_prior = None
+        if len(cwip_row) >= 1 and len(fixed_assets_row) >= 1:
+            c_latest = cwip_row[-1]
+            fa_latest = fixed_assets_row[-1]
+            if c_latest is not None and fa_latest is not None and fa_latest > 0:
+                cwip_ratio_latest = round(c_latest / fa_latest, 2)
+        if len(cwip_row) >= 2 and len(fixed_assets_row) >= 2:
+            c_prior = cwip_row[-2]
+            fa_prior = fixed_assets_row[-2]
+            if c_prior is not None and fa_prior is not None and fa_prior > 0:
+                cwip_ratio_prior = round(c_prior / fa_prior, 2)
+
+        # 2d. Other Income to PBT (TTM from quarters or latest fiscal from profit_loss)
+        other_income_to_pbt_ttm = None
+        q_other_inc = quarters.get("Other Income") or []
+        q_pbt = quarters.get("Profit before tax") or []
+        if len(q_pbt) >= 4:
+            pbt_ttm = sum([v for v in q_pbt[-4:] if v is not None])
+            other_inc_ttm = sum([v for v in q_other_inc[-4:] if v is not None])
+            if pbt_ttm > 0:
+                other_income_to_pbt_ttm = round(other_inc_ttm / pbt_ttm, 2)
+        if other_income_to_pbt_ttm is None:
+            pl_other = (profit_loss.get("Other Income") or [None])[-1]
+            pl_pbt = (profit_loss.get("Profit before tax") or [None])[-1]
+            if pl_pbt and pl_pbt > 0:
+                other_income_to_pbt_ttm = round((pl_other or 0.0) / pl_pbt, 2)
 
         # 3. Debt to Equity
         debt_to_equity = top_ratios.get("Debt to equity")
@@ -638,6 +695,12 @@ class CustomScreenerParser:
             "roe_pct": roe_pct,
             "cfo_to_pat_3y": cfo_to_pat_3y,
             "cfo_to_ebitda_3y": cfo_to_ebitda_3y,
+            "debtor_days_latest": debtor_days_latest,
+            "debtor_days_3y_avg": debtor_days_3y_avg,
+            "debtor_days_delta": debtor_days_delta,
+            "cwip_ratio_latest": cwip_ratio_latest,
+            "cwip_ratio_prior": cwip_ratio_prior,
+            "other_income_to_pbt_ttm": other_income_to_pbt_ttm,
             "debt_to_equity": debt_to_equity,
             "qoq_opm_delta_bps": qoq_opm_delta_bps,
             "latest_qtr_yoy_opm_bps": latest_qtr_yoy_opm_bps,

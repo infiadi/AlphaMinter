@@ -13,7 +13,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // 1. Protected API endpoint for GitHub Actions
+    // 1. Protected API endpoint for GitHub Actions & Local Runners
     if (url.pathname === "/api/silenced-list") {
       const authHeader = request.headers.get("X-Internal-Secret");
       if (env.INTERNAL_SECRET && authHeader !== env.INTERNAL_SECRET) {
@@ -30,9 +30,27 @@ export default {
       return new Response(JSON.stringify({ silenced }), { headers: { "Content-Type": "application/json" } });
     }
 
+    // 1b. Protected API endpoint for Deep Dive Queue
+    if (url.pathname === "/api/deep-dive-queue") {
+      const authHeader = request.headers.get("X-Internal-Secret");
+      if (env.INTERNAL_SECRET && authHeader !== env.INTERNAL_SECRET) {
+        return new Response(JSON.stringify({ error: "Unauthorized access" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      const { results } = await env.DB.prepare(
+        "SELECT symbol, updated_at FROM stocks_state WHERE status = 'DEEPDIVE_REQUESTED' ORDER BY updated_at ASC"
+      ).all();
+      const queued = (results || []).map(r => r.symbol);
+      return new Response(JSON.stringify({ queued }), { headers: { "Content-Type": "application/json" } });
+    }
+
     // 2. Telegram Native Command Menu Registration (/api/setup-commands)
     if (url.pathname === "/api/setup-commands") {
       const commands = [
+        { command: "deepdives", description: "View stocks queued for deep dive" },
         { command: "watchlist", description: "View stocks on active watchlist" },
         { command: "banned", description: "View permabanned stocks" },
         { command: "unban", description: "Restore a stock: /unban SYMBOL" },
@@ -70,7 +88,12 @@ export default {
           const today = new Date();
           let feedback = "";
 
-          if (action === "DROP") {
+          if (action === "DEEPDIVE") {
+            await env.DB.prepare(
+              "INSERT INTO stocks_state (symbol, status, cooldown_until) VALUES (?, 'DEEPDIVE_REQUESTED', NULL) ON CONFLICT(symbol) DO UPDATE SET status='DEEPDIVE_REQUESTED', cooldown_until=NULL, updated_at=CURRENT_TIMESTAMP"
+            ).bind(symbol).run();
+            feedback = `🔬 Queued Deep Dive for ${symbol}`;
+          } else if (action === "DROP") {
             const cooldown = new Date();
             cooldown.setDate(today.getDate() + 30);
             const cooldownStr = cooldown.toISOString().split("T")[0];
@@ -116,12 +139,15 @@ export default {
 
           const helpMessage = `<b>🤖 AlphaMinter Bot Commands & Guide</b>\n\n` +
             `<b>📋 Available Commands:</b>\n` +
+            `• <code>/deepdives</code> — View stocks queued for 25%+ deep dive\n` +
+            `• <code>/deepdive SYMBOL</code> — Queue stock for deep dive (e.g. <code>/deepdive ANANTRAJ</code>)\n` +
             `• <code>/watchlist</code> — View stocks saved to your active watchlist\n` +
             `• <code>/banned</code> — View stocks currently permabanned from alerts\n` +
             `• <code>/unban SYMBOL</code> — Restore a stock (e.g. <code>/unban GOLDIETF</code>)\n` +
             `• <code>/help</code> — Show this help guide\n\n` +
             `<b>⚡ 1-Tap Alert Buttons:</b>\n` +
             `When an alert arrives on your phone, use the inline buttons:\n` +
+            `• <b>🔬 Deep Dive:</b> Queue institutional 25%+ CAGR analysis & 30-day delta tracking\n` +
             `• <b>⭐ Watchlist:</b> Add stock to your active watchlist\n` +
             `• <b>❌ Drop 30D:</b> Silence alerts for 30 days (cooldown)\n` +
             `• <b>🚫 Permaban:</b> Permanently exclude stock from all future scans\n\n` +
@@ -139,6 +165,7 @@ export default {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 commands: [
+                  { command: "deepdives", description: "View stocks queued for deep dive" },
                   { command: "watchlist", description: "View stocks on active watchlist" },
                   { command: "banned", description: "View permabanned stocks" },
                   { command: "unban", description: "Restore a stock: /unban SYMBOL" },
@@ -147,6 +174,21 @@ export default {
               })
             }).catch(() => {});
             await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, helpMessage);
+          } else if (lowerText === "/deepdives" || lowerText === "deepdives") {
+            const { results } = await env.DB.prepare("SELECT symbol FROM stocks_state WHERE status = 'DEEPDIVE_REQUESTED' ORDER BY updated_at DESC").all();
+            const list = (results || []).map(r => `• <code>${r.symbol}</code>`).join("\n") || "<i>No stocks currently queued for deep dive.</i>";
+            await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `<b>🔬 Queued for Deep Dive:</b>\n\n${list}\n\n<i>To add a stock, send:</i>\n<code>/deepdive SYMBOL</code>`);
+          } else if (lowerText.startsWith("/deepdive") || lowerText.startsWith("deepdive")) {
+            const parts = text.split(/\s+/);
+            if (parts.length < 2) {
+              await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "⚠️ <b>Usage:</b> <code>/deepdive SYMBOL</code>\n<i>Example: /deepdive ANANTRAJ</i>");
+            } else {
+              const targetSymbol = parts[1].trim().toUpperCase();
+              await env.DB.prepare(
+                "INSERT INTO stocks_state (symbol, status, cooldown_until) VALUES (?, 'DEEPDIVE_REQUESTED', NULL) ON CONFLICT(symbol) DO UPDATE SET status='DEEPDIVE_REQUESTED', cooldown_until=NULL, updated_at=CURRENT_TIMESTAMP"
+              ).bind(targetSymbol).run();
+              await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `🔬 <b>Queued Deep Dive for <code>${targetSymbol}</code></b>.\nEligible for institutional 25%+ CAGR analysis and 30-day delta tracking.`);
+            }
           } else if (lowerText === "/watchlist" || lowerText === "watchlist") {
             const { results } = await env.DB.prepare("SELECT symbol FROM stocks_state WHERE status = 'WATCHLIST' ORDER BY updated_at DESC").all();
             const list = (results || []).map(r => `• <code>${r.symbol}</code>`).join("\n") || "<i>Watchlist is empty.</i>";

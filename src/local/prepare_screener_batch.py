@@ -246,17 +246,8 @@ def evaluate_negative_flags(
             flags.append("NEG_ROCE")
             reasons["NEG_ROCE"] = f"ROCE {roce}% < minimum required {effective_min_roce}%"
 
-    # 2. NEG_CASH_CONVERSION (CFO to PAT 3Y) - Skipped for banks & NBFCs
-    if "NEG_CASH_CONVERSION" not in exempt_flags:
-        if not is_fin:
-            global_min_cfo = float(global_filters.get("min_cfo_to_pat_3y", 0.60))
-            screen_cfos = [ov.get("min_cfo_to_pat_3y") for ov in screen_overrides_list if ov.get("min_cfo_to_pat_3y") is not None]
-            effective_min_cfo = max(screen_cfos) if screen_cfos else global_min_cfo
-
-            cfo_pat = metrics.get("cfo_to_pat_3y")
-            if cfo_pat is not None and cfo_pat < effective_min_cfo:
-                flags.append("NEG_CASH_CONVERSION")
-                reasons["NEG_CASH_CONVERSION"] = f"3Y CFO/PAT {cfo_pat:.2f} < threshold {effective_min_cfo:.2f}"
+    # 2. Cash Conversion: MERGED into FORENSIC_LOW_CFO in evaluate_forensic_flags()
+    # to eliminate double-counting on a single cash-flow conversion issue.
 
     # 3. NEG_HIGH_DEBT (Skipped if bank/finance/nbfc)
     if "NEG_HIGH_DEBT" not in exempt_flags:
@@ -348,6 +339,307 @@ def evaluate_negative_flags(
         reasons["NEG_LOW_MCAP"] = f"Market Cap ₹{mcap:.0f} Cr < minimum required ₹{effective_min_mcap:.0f} Cr"
 
     return flags, reasons
+
+
+def evaluate_forensic_flags(
+    stock_candidate: Dict[str, Any],
+    global_filters: Optional[Dict[str, Any]] = None,
+    screen_overrides_list: Optional[List[Dict[str, Any]]] = None
+) -> Tuple[List[str], Dict[str, str]]:
+    """
+    Evaluates 4 deterministic forensic accounting flags with BFSI auto-exemption:
+    1. FORENSIC_LOW_CFO: Unified cash-flow conversion gate (3Y CFO/EBITDA < 0.65 or CFO/PAT < 0.60)
+    2. FORENSIC_DEBTOR_BLOAT: Debtor Days jumped > 15 days vs 3Y average AND latest Debtor Days > 60d
+    3. FORENSIC_CWIP_TRAP: CWIP/Net Fixed Assets > 0.30 for 2+ consecutive years (exempt: Power/Utilities/Telecom/Infra)
+    4. FORENSIC_OTHER_INC: Trailing 12-Month Other Income / PBT > 0.20
+
+    Returns:
+        (forensic_flags, forensic_flag_reasons)
+    """
+    flags: List[str] = []
+    reasons: Dict[str, str] = {}
+
+    dossier = stock_candidate.get("dossier", {})
+    metrics = dossier.get("derived_metrics", {})
+
+    # BFSI Auto-Exemption:
+    # Banks, NBFCs, Housing Finance, AMCs, Insurance, and Broking firms
+    # follow fundamentally different cash-flow and working-capital accounting.
+    if metrics.get("is_financial_sector", False):
+        return flags, reasons
+
+    # 1. FORENSIC_LOW_CFO (Unified cash conversion check - replaces duplicate NEG_CASH_CONVERSION)
+    global_min_cfo = float(global_filters.get("min_cfo_to_pat_3y", 0.60)) if global_filters else 0.60
+    screen_cfos = [ov.get("min_cfo_to_pat_3y") for ov in (screen_overrides_list or []) if ov.get("min_cfo_to_pat_3y") is not None]
+    effective_min_cfo = max(screen_cfos) if screen_cfos else global_min_cfo
+
+    cfo_ebitda = metrics.get("cfo_to_ebitda_3y")
+    cfo_pat = metrics.get("cfo_to_pat_3y")
+    if (cfo_ebitda is not None and cfo_ebitda < 0.65) or (cfo_pat is not None and cfo_pat < effective_min_cfo):
+        flags.append("FORENSIC_LOW_CFO")
+        reasons["FORENSIC_LOW_CFO"] = (
+            f"Poor cash conversion: 3Y CFO/EBITDA={cfo_ebitda if cfo_ebitda is not None else 'N/A'} (<0.65) "
+            f"or CFO/PAT={cfo_pat if cfo_pat is not None else 'N/A'} (<{effective_min_cfo:.2f})"
+        )
+
+    # 2. FORENSIC_DEBTOR_BLOAT (from static #ratios table)
+    debtor_delta = metrics.get("debtor_days_delta")
+    debtor_latest = metrics.get("debtor_days_latest")
+    if debtor_delta is not None and debtor_delta > 15.0 and debtor_latest is not None and debtor_latest > 60.0:
+        flags.append("FORENSIC_DEBTOR_BLOAT")
+        reasons["FORENSIC_DEBTOR_BLOAT"] = (
+            f"Debtor days jumped by {debtor_delta:+.1f} days vs 3Y average to {debtor_latest:.0f} days (>60d)"
+        )
+
+    # 3. FORENSIC_CWIP_TRAP (Persistent CWIP without asset conversion)
+    cwip_latest = metrics.get("cwip_ratio_latest")
+    cwip_prior = metrics.get("cwip_ratio_prior")
+
+    # Exempt capital-intensive infrastructure / power / utilities / telecom
+    sec_ind = f"{dossier.get('sector', '')} {dossier.get('industry', '')} {stock_candidate.get('name', '')}".lower()
+    is_infra_exempt = any(k in sec_ind for k in ["power", "utilities", "telecom", "infrastructure", "infra", "port", "airport", "railway"])
+
+    if not is_infra_exempt:
+        if cwip_latest is not None and cwip_latest > 0.30 and cwip_prior is not None and cwip_prior > 0.30:
+            flags.append("FORENSIC_CWIP_TRAP")
+            reasons["FORENSIC_CWIP_TRAP"] = (
+                f"Persistent CWIP bloat: CWIP/Net Fixed Assets > 30% for 2+ consecutive years "
+                f"({cwip_prior*100:.0f}% -> {cwip_latest*100:.0f}%)"
+            )
+
+    # 4. FORENSIC_OTHER_INC (Non-core profit distortion)
+    other_inc_ratio = metrics.get("other_income_to_pbt_ttm")
+    if other_inc_ratio is not None and other_inc_ratio > 0.20:
+        flags.append("FORENSIC_OTHER_INC")
+        reasons["FORENSIC_OTHER_INC"] = (
+            f"High non-operating other income: {other_inc_ratio*100:.1f}% of PBT (>20% threshold)"
+        )
+
+    return flags, reasons
+
+
+def fetch_technofundamental_batch(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
+    """
+    Fetches OHLCV and calculates Mark Minervini trend stage & Mansfield RS (50D) vs benchmark.
+    Guardrails:
+    - Index fallback: ^CRSLDX (Nifty 500) -> ^NSEI (Nifty 50)
+    - Ticker fallback: <SYMBOL>.NS -> <SYMBOL>.BO (for BSE-only stocks)
+    """
+    results: Dict[str, Dict[str, Any]] = {}
+    if not symbols:
+        return results
+
+    try:
+        import yfinance as yf
+        import pandas as pd
+    except ImportError:
+        logger.warning("yfinance or pandas not installed. Technofundamental metrics skipped.")
+        for s in symbols:
+            results[s] = {"trend_stage": "UNKNOWN", "mansfield_rs_50d": None, "technical_summary": "yfinance not installed"}
+        return results
+
+    # 1. Fetch Benchmark Index: ^CRSLDX with fallback to ^NSEI
+    bench_df = pd.DataFrame()
+    try:
+        bench_df = yf.download("^CRSLDX", period="1y", progress=False)
+        if bench_df.empty or len(bench_df) < 50:
+            logger.info("Index ^CRSLDX unavailable or short; falling back to ^NSEI.")
+            bench_df = yf.download("^NSEI", period="1y", progress=False)
+    except Exception as e:
+        logger.warning(f"Error downloading ^CRSLDX: {e}; falling back to ^NSEI.")
+        try:
+            bench_df = yf.download("^NSEI", period="1y", progress=False)
+        except Exception as e2:
+            logger.warning(f"Error downloading ^NSEI fallback: {e2}")
+
+    bench_close = pd.Series(dtype=float)
+    if not bench_df.empty and "Close" in bench_df:
+        bench_close = bench_df["Close"].squeeze()
+
+    # 2. Fetch Stock Price Histories with .NS -> .BO Fallback
+    for sym in symbols:
+        stock_df = pd.DataFrame()
+        # Primary: NSE
+        try:
+            stock_df = yf.download(f"{sym}.NS", period="1y", progress=False)
+        except Exception:
+            stock_df = pd.DataFrame()
+
+        # Fallback: BSE
+        if stock_df.empty or len(stock_df) < 20:
+            try:
+                logger.info(f"{sym}.NS returned no/little data; falling back to {sym}.BO (BSE).")
+                stock_df = yf.download(f"{sym}.BO", period="1y", progress=False)
+            except Exception as e:
+                logger.warning(f"Failed to fetch {sym}.BO: {e}")
+
+        if stock_df.empty or len(stock_df) < 20:
+            results[sym] = {
+                "trend_stage": "UNKNOWN",
+                "mansfield_rs_50d": None,
+                "technical_summary": "Insufficient price data on NSE/BSE"
+            }
+            continue
+
+        try:
+            close = stock_df["Close"].squeeze()
+            cmp = float(close.iloc[-1])
+            ema20 = float(close.ewm(span=20, adjust=False).mean().iloc[-1])
+            ema50 = float(close.ewm(span=50, adjust=False).mean().iloc[-1])
+            ema150 = float(close.ewm(span=150, adjust=False).mean().iloc[-1]) if len(close) >= 150 else None
+            ema200_s = close.ewm(span=200, adjust=False).mean() if len(close) >= 200 else None
+            ema200 = float(ema200_s.iloc[-1]) if ema200_s is not None else None
+
+            ema200_rising = False
+            if ema200_s is not None and len(ema200_s) >= 20:
+                ema200_rising = float(ema200_s.iloc[-1]) >= float(ema200_s.iloc[-20])
+
+            # Classify Trend Stage
+            if ema150 is not None and ema200 is not None:
+                if cmp > ema50 > ema150 > ema200 and ema200_rising:
+                    stage = "STAGE_2_UPTREND"
+                elif cmp < ema50 < ema200 and not ema200_rising:
+                    stage = "STAGE_4_DOWNTREND"
+                elif cmp >= ema20:
+                    stage = "STAGE_1_BASE"
+                else:
+                    stage = "CONSOLIDATION_PULLBACK"
+            else:
+                stage = "STAGE_1_BASE" if cmp >= ema20 else "CONSOLIDATION_PULLBACK"
+
+            # Compute Mansfield RS (50D)
+            mansfield_rs = None
+            if not bench_close.empty and len(bench_close) >= 50:
+                comb = pd.DataFrame({"stock": close, "bench": bench_close}).dropna()
+                if len(comb) >= 50:
+                    ratio = comb["stock"] / comb["bench"]
+                    sma50 = ratio.rolling(50).mean()
+                    if not pd.isna(sma50.iloc[-1]) and sma50.iloc[-1] != 0:
+                        mansfield_rs = round(float(((ratio.iloc[-1] / sma50.iloc[-1]) - 1.0) * 100.0), 2)
+
+            summary = f"Stage: {stage} | CMP: {cmp:.1f} vs EMA20: {ema20:.1f}, EMA50: {ema50:.1f}"
+            if ema200 is not None:
+                summary += f", EMA200: {ema200:.1f} ({'Rising' if ema200_rising else 'Falling'})"
+            if mansfield_rs is not None:
+                summary += f" | Mansfield RS (50D): {mansfield_rs:+.2f}%"
+
+            results[sym] = {
+                "trend_stage": stage,
+                "mansfield_rs_50d": mansfield_rs,
+                "cmp": round(cmp, 1),
+                "ema20": round(ema20, 1),
+                "ema50": round(ema50, 1),
+                "ema200": round(ema200, 1) if ema200 else None,
+                "ema200_rising": ema200_rising,
+                "technical_summary": summary
+            }
+        except Exception as e:
+            logger.warning(f"Error calculating technicals for {sym}: {e}")
+            results[sym] = {
+                "trend_stage": "UNKNOWN",
+                "mansfield_rs_50d": None,
+                "technical_summary": f"Calculation error: {e}"
+            }
+
+    return results
+
+
+def generate_analyst_prompt(candidate: Dict[str, Any]) -> str:
+    """Pre-renders an institutional, ready-to-run BEAR-FIRST prompt for @equity-analyst."""
+    sym = candidate["symbol"]
+    name = candidate["name"]
+    dossier = candidate.get("dossier", {})
+    metrics = dossier.get("derived_metrics", {})
+    top_ratios = dossier.get("top_ratios", {})
+    growth = dossier.get("compounded_growth", {})
+    screens = candidate.get("matched_screens", [])
+    rubrics = candidate.get("rubrics", [])
+    flags = candidate.get("negative_flags", [])
+    forensic_flags = candidate.get("forensic_flags", [])
+    needs_review = candidate.get("needs_agent_review", False)
+    review_reason = candidate.get("review_reason", "")
+    sm = candidate.get("screen_metrics", {})
+    tech = candidate.get("technicals", {})
+
+    down_52w = sm.get("Down%") or sm.get("Down %") or "N/A"
+    down_ath = sm.get("Down ATH%") or sm.get("Down ATH %") or "N/A"
+
+    prompt = f"""You are analyzing candidate stock {sym} ({name}).
+Evaluate this single stock using its pre-prepared quantitative dossier below.
+Follow the STRICT BEAR-FIRST EVALUATION PROTOCOL.
+
+### CANDIDATE DOSSIER:
+- Symbol: {sym} | Company: {name}
+- Matched Screens: {', '.join(screens)} (Hits: {candidate.get('screen_count', 1)})
+- Rubrics: {' '.join(rubrics)}
+- Market Cap: ₹{metrics.get('market_cap_cr', top_ratios.get('Market Cap', 'N/A'))} Cr | CMP: ₹{metrics.get('current_price', top_ratios.get('Current Price', 'N/A'))}
+- Drawdown: Down from 52W High: {down_52w}% | Down from ATH: {down_ath}%
+- Valuation & Quality: Stock P/E: {metrics.get('pe', top_ratios.get('Stock P/E', 'N/A'))}x | ROCE: {metrics.get('roce_pct', top_ratios.get('ROCE', 'N/A'))}% | ROE: {metrics.get('roe_pct', top_ratios.get('ROE', 'N/A'))}%
+- Cash Conversion: 3Y CFO / PAT: {metrics.get('cfo_to_pat_3y', 'N/A')}x | 3Y CFO / EBITDA: {metrics.get('cfo_to_ebitda_3y', 'N/A')}x
+- Working Capital: Debtor Days: {metrics.get('debtor_days_latest', 'N/A')} (Delta vs 3Y Avg: {metrics.get('debtor_days_delta', 'N/A')}d)
+- Capex & Leverage: CWIP / Net Block: {metrics.get('cwip_ratio_latest', 'N/A')}x | Debt to Equity: {metrics.get('debt_to_equity', 'N/A')}
+- Non-Core Income: Other Income / PBT: {metrics.get('other_income_to_pbt_ttm', 'N/A')}
+- Promoter: Pledge: {metrics.get('promoter_pledge_pct', 0.0)}% | QoQ Change: {metrics.get('promoter_qoq_change_pct', 'N/A')}%
+- Compounded Sales Growth: {json.dumps(growth.get('Compounded Sales Growth', {}))}
+- Compounded Profit Growth: {json.dumps(growth.get('Compounded Profit Growth', {}))}
+- Technofundamental Profile: {tech.get('technical_summary', 'N/A')}
+- Flags: Standard Flags={flags or 'None'} | Forensic Flags={forensic_flags or 'None'}
+- Review Context: {review_reason if needs_review else 'Standard quant qualification'}
+
+### STRICT BEAR-FIRST EVALUATION PROTOCOL:
+You must structure your evaluation into 4 sequential sections:
+
+SECTION 1: FORENSIC & BEAR KILL-SWITCH CRITIQUE (FIRST)
+- Actively search for reasons to KILL this investment thesis.
+- Multiple Derating Risk: If P/E > 50x, will multiple compression destroy equity returns even if earnings grow at 20%?
+- Balance Sheet & Working Capital: Are receivables or inventories outpacing revenue? Is CWIP inflating without asset turnover?
+- Sector Cyclicality: If buying a bruised stock, distinguish between a structural value trap vs a cyclical/transient pullback.
+
+SECTION 2: CONCALL Q&A & GUIDANCE AUDIT (TARGETED WEB SEARCH)
+- Perform 1 or 2 targeted web searches via search_web:
+  - "{sym} concall highlights OR Q&A OR guidance"
+  - "{sym} quarterly results red flags"
+- Analyze management commentary and analyst Q&A: Did analysts press management on margin compression, capex delays, or client losses? Did management give direct quantitative commitments or vague evasions?
+
+SECTION 3: THE 20%+ CAGR GROWTH MATH
+- Only if the company survives the Bear audit, evaluate which of the 4 alpha pathways realistically achieves >= 20% CAGR total return:
+  1. Valuation Expansion / PE Rerating on solid compounder
+  2. Earnings Compounding with Derating Stress-Test
+  3. Capex Inflection & Operating Leverage
+  4. Market Beta & Cyclical Proxy
+- Explicitly detail the return math: (EPS growth % + P/E change % = Total CAGR).
+
+SECTION 4: FINAL VERDICT & CONVICTION
+- Assign one of: STRONG_BUY_WATCH, ACCUMULATE_ON_DIP, HOLD_WATCH, or REJECT, with conviction score (1-10).
+- Define 2-3 concrete thesis invalidation triggers (kill-switches).
+
+CRITICAL: At the end of your response, output a markdown code block tagged ```json containing the complete structured JSON record matching this schema:
+```json
+{{
+  "timestamp": "{datetime.now().isoformat()}",
+  "symbol": "{sym}",
+  "name": "{name}",
+  "verdict": "STRONG_BUY_WATCH|ACCUMULATE_ON_DIP|HOLD_WATCH|REJECT",
+  "conviction_score": 8,
+  "alpha_pathway": "PE_RERATING|EARNINGS_COMPOUNDER|CAPEX_INFLECTION|CYCLICAL_MARKET_PROXY",
+  "expected_cagr_3y": "20-25%",
+  "return_math_breakdown": "...",
+  "margin_of_safety": "...",
+  "screen_count": {candidate.get('screen_count', 1)},
+  "matched_screens": {json.dumps(screens)},
+  "negative_flags": {json.dumps(flags)},
+  "forensic_flags": {json.dumps(forensic_flags)},
+  "trend_stage": "{tech.get('trend_stage', 'UNKNOWN')}",
+  "mansfield_rs_50d": {tech.get('mansfield_rs_50d') if tech.get('mansfield_rs_50d') is not None else 'null'},
+  "thesis": "...",
+  "guidance_summary": "...",
+  "bear_kill_switches": ["..."],
+  "risks_summary": "...",
+  "key_catalysts": ["..."]
+}}
+```
+"""
+    return prompt
 
 
 def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
@@ -565,6 +857,11 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
         f"High Growth={len(growth_stocks[:10])}, Midcap={len(midcap_stocks[:10])}"
     )
 
+    # Fetch technofundamental metrics (Minervini Stage + Mansfield RS 50D) in batch
+    symbols_to_fetch = [c["symbol"] for c in candidates_to_fetch]
+    logger.info(f"Computing technofundamental trends and Mansfield RS for {len(symbols_to_fetch)} symbols...")
+    tech_data = fetch_technofundamental_batch(symbols_to_fetch)
+
     # Step E: PASS 2 - Deep Financial Dossier Fetch & Multi-Year Indicator Audit
     for idx, cand in enumerate(candidates_to_fetch, 1):
         sym = cand["symbol"]
@@ -576,12 +873,68 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
 
         cand["dossier"] = dossier
 
+        # Attach technofundamental metrics
+        cand["technicals"] = tech_data.get(sym, {})
+        dossier.get("derived_metrics", {})["trend_stage"] = cand["technicals"].get("trend_stage", "UNKNOWN")
+        dossier.get("derived_metrics", {})["mansfield_rs_50d"] = cand["technicals"].get("mansfield_rs_50d")
+
         # Evaluate deep negative flags (CFO/PAT, Debt/Equity, QoQ/YoY margins, promoter changes)
         flags, flag_reasons = evaluate_negative_flags(
             stock_candidate=cand,
             global_filters=global_filters,
             screen_overrides_list=cand.get("conditional_overrides", [])
         )
+
+        # Evaluate deterministic forensic flags (CFO/EBITDA, Debtor Days, CWIP, Other Income)
+        f_flags, f_reasons = evaluate_forensic_flags(
+            stock_candidate=cand,
+            global_filters=global_filters,
+            screen_overrides_list=cand.get("conditional_overrides", [])
+        )
+        cand["forensic_flags"] = f_flags
+        cand["forensic_flag_reasons"] = f_reasons
+
+        # Multi-flag forensic rejection: >= 2 forensic flags is fatal
+        if len(f_flags) >= 2:
+            logger.warning(
+                f"FORENSIC REJECTION {sym} ({cand['name']}): {len(f_flags)} forensic flags >= 2. "
+                f"Forensic Flags: {f_flags}"
+            )
+            rejected_candidates.append({
+                "symbol": sym,
+                "name": cand["name"],
+                "screen_count": cand["screen_count"],
+                "matched_screens": cand["matched_screens"],
+                "negative_flags": flags,
+                "forensic_flags": f_flags,
+                "reasons": {**flag_reasons, **f_reasons},
+                "top_ratios": dossier.get("top_ratios", {}),
+                "derived_metrics": dossier.get("derived_metrics", {})
+            })
+            continue
+
+        # If exactly 1 forensic flag, merge into candidate warning flags for visibility
+        if len(f_flags) == 1:
+            flags.extend(f_flags)
+            flag_reasons.update(f_reasons)
+
+        # Screen-Conditional Technofundamental Policy:
+        # Momentum/Growth screens require non-Stage 4; Value/Bruised Bluechips allow downtrends/basing
+        matched_screens = cand.get("matched_screens", [])
+        is_value_screen = any(
+            kw in s.lower()
+            for s in matched_screens
+            for kw in ["bruised", "discount", "dividend", "value", "graham"]
+        )
+        trend_stage = cand["technicals"].get("trend_stage", "UNKNOWN")
+
+        if not is_value_screen and trend_stage == "STAGE_4_DOWNTREND":
+            logger.info(f"{sym}: Flagging pure growth/momentum candidate due to STAGE_4_DOWNTREND.")
+            flags.append("NEG_STAGE_4_DOWNTREND")
+            flag_reasons["NEG_STAGE_4_DOWNTREND"] = (
+                "Stage 4 downtrend (CMP < EMA50 < EMA200 with falling 200 EMA) not permitted on pure momentum/growth screens"
+            )
+
         cand["negative_flags"] = flags
         cand["negative_flag_reasons"] = flag_reasons
 
@@ -614,6 +967,7 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
                 "screen_count": cand["screen_count"],
                 "matched_screens": cand["matched_screens"],
                 "negative_flags": flags,
+                "forensic_flags": f_flags,
                 "reasons": flag_reasons,
                 "top_ratios": dossier.get("top_ratios", {}),
                 "derived_metrics": dossier.get("derived_metrics", {})
@@ -658,6 +1012,42 @@ def run_stage_1_prep(limit: Optional[int] = None) -> Dict[str, Any]:
             "created_at": datetime.now().isoformat(),
             "rejected_count": len(rejected_candidates),
             "rejected": rejected_candidates
+        }, f, indent=2, ensure_ascii=False)
+
+    # Step F: Pre-render Subagent Prompt Batches (Strictly sequential: 1 stock per batch for atomic checkpointing)
+    batch_size = int(settings.get("parallel_subagents_batch_size", 1))
+    batches = []
+    current_batch = []
+
+    for c in qualified_candidates:
+        prompt_item = {
+            "symbol": c["symbol"],
+            "name": c["name"],
+            "role": f"Equity Analyst - {c['symbol']}",
+            "type_name": "equity-analyst",
+            "prompt": generate_analyst_prompt(c)
+        }
+        current_batch.append(prompt_item)
+        if len(current_batch) == batch_size:
+            batches.append(current_batch)
+            current_batch = []
+    if current_batch:
+        batches.append(current_batch)
+
+    batch_files = []
+    for b_idx, b in enumerate(batches, 1):
+        b_file = QUEUES_DIR / f"active_batch_{b_idx}.json"
+        with open(b_file, "w", encoding="utf-8") as f:
+            json.dump(b, f, indent=2, ensure_ascii=False)
+        batch_files.append(str(b_file))
+
+    manifest_file = QUEUES_DIR / "active_manifest.json"
+    with open(manifest_file, "w", encoding="utf-8") as f:
+        json.dump({
+            "timestamp": timestamp_str,
+            "total_candidates": len(qualified_candidates),
+            "total_batches": len(batches),
+            "batch_files": [f"data/prepared_queues/active_batch_{i}.json" for i in range(1, len(batches) + 1)]
         }, f, indent=2, ensure_ascii=False)
 
     duration = (datetime.now() - start_time).total_seconds()

@@ -62,6 +62,9 @@ def is_on_review_cooldown(
     If current_screen_count > historical_screen_count, allows re-evaluation (confluence increased).
     Otherwise returns True to skip.
     """
+    if cooldown_days <= 0:
+        return False, "Cooldown disabled (0 days)"
+
     record = history.get(symbol.upper())
     if not record:
         return False, "New ticker (never reviewed)"

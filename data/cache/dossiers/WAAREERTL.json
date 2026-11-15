@@ -339,7 +339,7 @@
         18.0
       ],
       "Other Income": [
-        0.0,
+        -0.0,
         1.0,
         1.0,
         2.0,
@@ -423,15 +423,15 @@
         44.64
       ],
       "Dividend Payout %": [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
+        -0.0,
+        -0.0,
+        -0.0,
+        -0.0,
         12.0,
         4.0,
         7.0,
         5.0,
-        0.0,
+        -0.0,
         null
       ]
     }
@@ -535,12 +535,12 @@
         162.0
       ],
       "Investments": [
-        0.0,
-        0.0,
-        0.0,
+        -0.0,
+        -0.0,
+        -0.0,
         30.0,
         1.0,
-        0.0,
+        -0.0,
         9.0,
         52.0,
         31.0,
@@ -586,7 +586,7 @@
     ],
     "data": {
       "Cash from Operating Activity": [
-        0.0,
+        -0.0,
         -7.0,
         51.0,
         -2.0,
@@ -597,7 +597,7 @@
         287.0
       ],
       "Cash from Investing Activity": [
-        0.0,
+        -0.0,
         -28.0,
         -38.0,
         -105.0,
@@ -608,7 +608,7 @@
         -264.0
       ],
       "Cash from Financing Activity": [
-        0.0,
+        -0.0,
         35.0,
         14.0,
         81.0,
@@ -619,7 +619,7 @@
         23.0
       ],
       "Net Cash Flow": [
-        0.0,
+        -0.0,
         0.0,
         27.0,
         -26.0,
@@ -630,7 +630,7 @@
         45.0
       ],
       "Free Cash Flow": [
-        0.0,
+        -0.0,
         -35.0,
         11.0,
         -89.0,
@@ -641,7 +641,7 @@
         164.0
       ],
       "CFO/EBITDAShare of operating profit converting into cash: CFO (before tax) / Operating Profit": [
-        0.0,
+        -0.0,
         -202.0,
         5820.0,
         -33.0,
@@ -650,6 +650,87 @@
         74.0,
         120.0,
         66.0
+      ]
+    }
+  },
+  "ratios": {
+    "headers": [
+      "Mar 2018",
+      "Mar 2019",
+      "Mar 2020",
+      "Mar 2021",
+      "Mar 2022",
+      "Mar 2023",
+      "Mar 2024",
+      "Mar 2025",
+      "Mar 2026"
+    ],
+    "data": {
+      "Debtor Days": [
+        74.0,
+        214.0,
+        87.0,
+        174.0,
+        105.0,
+        64.0,
+        155.0,
+        114.0,
+        128.0
+      ],
+      "Inventory Days": [
+        null,
+        null,
+        null,
+        44.0,
+        5.0,
+        53.0,
+        17.0,
+        2.0,
+        20.0
+      ],
+      "Days Payable": [
+        null,
+        null,
+        null,
+        578.0,
+        164.0,
+        108.0,
+        168.0,
+        90.0,
+        129.0
+      ],
+      "Cash Conversion Cycle": [
+        74.0,
+        214.0,
+        87.0,
+        -361.0,
+        -54.0,
+        9.0,
+        3.0,
+        26.0,
+        19.0
+      ],
+      "Working Capital Days": [
+        -849.0,
+        -513.0,
+        -1059.0,
+        -460.0,
+        -91.0,
+        -42.0,
+        0.0,
+        -11.0,
+        9.0
+      ],
+      "ROCE %": [
+        null,
+        7.0,
+        2.0,
+        6.0,
+        23.0,
+        84.0,
+        100.0,
+        82.0,
+        83.0
       ]
     }
   },
@@ -749,6 +830,12 @@
     "roe_pct": 68.6,
     "cfo_to_pat_3y": 0.61,
     "cfo_to_ebitda_3y": 0.43,
+    "debtor_days_latest": 128.0,
+    "debtor_days_3y_avg": 111.0,
+    "debtor_days_delta": 17.0,
+    "cwip_ratio_latest": 0.09,
+    "cwip_ratio_prior": 0.65,
+    "other_income_to_pbt_ttm": 0.04,
     "debt_to_equity": 1.33,
     "qoq_opm_delta_bps": -400.0,
     "latest_qtr_yoy_opm_bps": -500.0,

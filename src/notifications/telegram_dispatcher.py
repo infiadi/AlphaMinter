@@ -46,8 +46,8 @@ class TelegramDispatcher:
     def build_triage_buttons(self, symbol: str) -> Dict:
         """
         Builds 1-tap inline triage buttons:
-        - Row 1: External Links (TradingView, Screener)
-        - Row 2: High-Conviction Actions (🔬 Deep Dive, ⭐ Watchlist)
+        - Row 1: External Links (TradingView, Screener, Yahoo Finance)
+        - Row 2: High-Conviction Action (⭐ Watchlist)
         - Row 3: Triage / Filtering (❌ Drop 30D, 🚫 Permaban)
         """
         symbol = symbol.strip().upper()
@@ -55,10 +55,10 @@ class TelegramDispatcher:
             "inline_keyboard": [
                 [
                     {"text": "📈 TradingView", "url": f"https://www.tradingview.com/chart/?symbol=NSE:{symbol}"},
-                    {"text": "📊 Screener", "url": f"https://www.screener.in/company/{symbol}/"}
+                    {"text": "📊 Screener", "url": f"https://www.screener.in/company/{symbol}/"},
+                    {"text": "🟣 Yahoo", "url": f"https://finance.yahoo.com/quote/{symbol}.NS"}
                 ],
                 [
-                    {"text": "🔬 Deep Dive", "callback_data": f"DEEPDIVE:{symbol}"},
                     {"text": "⭐ Watchlist", "callback_data": f"WATCH:{symbol}"}
                 ],
                 [

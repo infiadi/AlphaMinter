@@ -14,6 +14,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
+from src.local.brokerage_targets import fetch_brokerage_consensus
+
 # Set up project paths
 BASE_DIR = Path.cwd()
 LOGS_DIR = BASE_DIR / "logs"
@@ -72,6 +74,16 @@ def build_analyst_prompt(candidate: Dict[str, Any]) -> str:
     down_52w = sm.get("Down%") or sm.get("Down %") or "N/A"
     down_ath = sm.get("Down ATH%") or sm.get("Down ATH %") or "N/A"
 
+    # Harmonize with live yFinance market & forward metrics
+    b_data = fetch_brokerage_consensus(sym)
+    b_target = f"₹{b_data['target_median']} ({'+' if (b_data.get('upside_pct') or 0) > 0 else ''}{b_data.get('upside_pct')}% upside | {b_data.get('analyst_count')} brokers)" if b_data.get("has_coverage") else "Unrated by sell-side brokers"
+    b_fwd_pe = f"{b_data['forward_pe']}x" if b_data.get("forward_pe") else "N/A"
+    b_fwd_eps = f"₹{b_data['forward_eps']}" if b_data.get("forward_eps") else "N/A"
+    b_ev_ebitda = f"{b_data['ev_to_ebitda']}x" if b_data.get("ev_to_ebitda") else "N/A"
+    b_revisions = b_data.get("eps_revisions_30d") or "None in last 30D"
+    b_trend = b_data.get("eps_trend_30d") or "Stable / unguided"
+    b_news = "\n".join([f"  * {hl}" for hl in b_data.get("recent_news", [])]) if b_data.get("recent_news") else "  * None available"
+
     prompt = f"""You are analyzing candidate stock {sym} ({name}).
 Evaluate this single stock using its pre-prepared quantitative dossier below.
 Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
@@ -82,7 +94,11 @@ Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
 - Rubrics: {' '.join(rubrics)}
 - Market Cap: ₹{metrics.get('market_cap_cr', top_ratios.get('Market Cap', 'N/A'))} Cr | CMP: ₹{metrics.get('current_price', top_ratios.get('Current Price', 'N/A'))}
 - Drawdown: Down from 52W High: {down_52w}% | Down from ATH: {down_ath}%
-- Valuation & Quality: Stock P/E: {metrics.get('pe', top_ratios.get('Stock P/E', 'N/A'))}x | ROCE: {metrics.get('roce_pct', top_ratios.get('ROCE', 'N/A'))}% | ROE: {metrics.get('roe_pct', top_ratios.get('ROE', 'N/A'))}%
+- Valuation & Quality (Screener): Stock P/E: {metrics.get('pe', top_ratios.get('Stock P/E', 'N/A'))}x | ROCE: {metrics.get('roce_pct', top_ratios.get('ROCE', 'N/A'))}% | ROE: {metrics.get('roe_pct', top_ratios.get('ROE', 'N/A'))}%
+- Forward Valuation & Consensus (yFinance): Street Target: {b_target} | Forward P/E: {b_fwd_pe} | Forward EPS: {b_fwd_eps} | EV/EBITDA: {b_ev_ebitda}
+- Institutional Revisions & Trajectory: 30D EPS Revisions: {b_revisions} | 30D EPS Drift: {b_trend}
+- Recent News & Concall Summaries:
+{b_news}
 - Cash Conversion: 3Y CFO / PAT: {metrics.get('cfo_to_pat_3y', 'N/A')}x | 3Y CFO / EBITDA: {metrics.get('cfo_to_ebitda_3y', 'N/A')}x
 - Working Capital: Debtor Days: {metrics.get('debtor_days_latest', 'N/A')} (Delta vs 3Y Avg: {metrics.get('debtor_days_delta', 'N/A')}d)
 - Capex & Leverage: CWIP / Net Block: {metrics.get('cwip_ratio_latest', 'N/A')}x | Debt to Equity: {metrics.get('debt_to_equity', 'N/A')}
@@ -105,6 +121,7 @@ Follow the STRICT FORWARD GROWTH PHASE & SECTOR LIFECYCLE EVALUATION PROTOCOL.
      * SUNSET_STAGNANT: Low volume growth (<8%), commoditized price-taker, moat decay. Mandatory REJECT or HOLD_WATCH.
 2. FORWARD GROWTH PHASE AUDIT (FY27-FY29 Visibility):
    - Check concall and broker reports for: executable order book (2x-3x revenue), capacity commissioning dates, margin durability.
+   - Cross-check Street consensus Forward P/E and EPS revisions: Are analysts revising estimates UP or DOWN? If revisions are negative or declining, stress-test why.
    - Is future growth accelerating or plateauing?
 3. ANTI-DERATING & FORWARD PEG GATE:
    - Calculate Forward PEG = Current P/E / Forward Guided EPS Growth %.

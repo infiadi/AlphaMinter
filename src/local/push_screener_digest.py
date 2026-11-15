@@ -20,6 +20,7 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 from src.notifications.telegram_dispatcher import TelegramDispatcher
+from src.local.brokerage_targets import fetch_brokerage_consensus
 
 logging.basicConfig(
     level=logging.INFO,
@@ -166,6 +167,48 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
     else:
         ks_text = "• <i>Standard thesis invalidation triggers apply</i>"
 
+    # Fetch live yFinance consensus & forward metrics
+    broker_data = fetch_brokerage_consensus(symbol)
+    if broker_data.get("has_coverage"):
+        upside_sign = "+" if (broker_data.get("upside_pct") or 0) > 0 else ""
+        broker_section = (
+            f"<b>📈 Street Consensus & Broker Targets (yFinance):</b>\n"
+            f"• 🎯 <b>Consensus Target:</b> <b>₹{broker_data['target_median']:,.1f}</b> "
+            f"(<code>{upside_sign}{broker_data['upside_pct']}%</code> upside | {broker_data['analyst_count']} brokers)\n"
+            f"• 🏷️ <b>Broker Target Range:</b> Low ₹{broker_data['target_low']:,.0f} — High ₹{broker_data['target_high']:,.0f}\n"
+        )
+    else:
+        broker_section = (
+            f"<b>📈 Street Consensus & Broker Targets (yFinance):</b>\n"
+            f"• 🎯 <b>Consensus Target:</b> <i>Uncovered by sell-side brokers (pure alpha compounder)</i>\n"
+        )
+
+    fwd_pe_str = f"<b>{broker_data['forward_pe']}x</b>" if broker_data.get("forward_pe") else "<i>N/A</i>"
+    fwd_eps_str = f"₹{broker_data['forward_eps']}" if broker_data.get("forward_eps") else "<i>N/A</i>"
+    ev_ebitda_str = f"{broker_data['ev_to_ebitda']}x" if broker_data.get("ev_to_ebitda") else "<i>N/A</i>"
+    beta_str = f"{broker_data['beta']}" if broker_data.get("beta") else "<i>N/A</i>"
+    inst_str = f"{broker_data['institutional_holding_pct']}%" if broker_data.get("institutional_holding_pct") else "<i>N/A</i>"
+
+    broker_section += (
+        f"• 🔭 <b>Forward P/E:</b> {fwd_pe_str} | <b>Forward EPS:</b> {fwd_eps_str} | <b>EV/EBITDA:</b> {ev_ebitda_str}\n"
+        f"• 🏛️ <b>Institutional Float:</b> {inst_str} | <b>Beta (5Y):</b> {beta_str}\n"
+    )
+
+    rev_str = broker_data.get("eps_revisions_30d")
+    trend_str = broker_data.get("eps_trend_30d")
+    if rev_str or trend_str:
+        rev_part = f"30D Revisions: <b>{rev_str}</b>" if rev_str else ""
+        trend_part = f"30D Trend: <b>{trend_str}</b>" if trend_str else ""
+        rev_line = " | ".join(p for p in [rev_part, trend_part] if p)
+        broker_section += f"• 📊 <b>Institutional Momentum:</b> {rev_line}\n"
+
+    top_news = broker_data.get("recent_news")
+    if top_news:
+        clean_headline = safe_html(top_news[0])
+        broker_section += f"• 📰 <b>Recent Headline:</b> <i>{clean_headline}</i>\n"
+
+    broker_section += "\n"
+
     msg = (
         f"{title}\n\n"
         f"<b>Company:</b> <code>{safe_html(symbol)}</code> ({safe_html(name)})\n"
@@ -179,6 +222,7 @@ def format_digest_card(record: Dict[str, Any], rank: int = 1, total_picks: int =
         f"• CMP: <b>{cmp_str}</b> | P/E: <b>{pe_str}</b> | M.Cap: <b>{mcap_str}</b>\n"
         f"• ROCE: <b>{roce_str}</b> | 3Y CFO/PAT: <b>{cfo_pat_str}</b> | D/E: <b>{de_str}</b>\n"
         f"• 3Y Sales CAGR: <b>{sales_growth_str}</b> | 3Y PAT CAGR: <b>{pat_growth_str}</b>\n\n"
+        f"{broker_section}"
         f"<b>🌅 Sector Dynamics & Tailwinds:</b>\n"
         f"<i>{safe_html(sector_contra)}</i>\n\n"
         f"<b>🚀 Future Growth Drivers (FY27–FY29):</b>\n"
